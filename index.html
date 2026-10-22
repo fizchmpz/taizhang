@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<script>
+(function(){
+  function show(msg){
+    var d=document.getElementById('__diag');
+    if(!d){d=document.createElement('div');d.id='__diag';
+      d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a1010;color:#fff;font:12px/1.55 monospace;padding:10px 12px;white-space:pre-wrap;max-height:70%;overflow:auto';
+      (document.body||document.documentElement).appendChild(d);}
+    d.appendChild(document.createTextNode(msg+'\n'));
+  }
+  window.onerror=function(m,src,l,c){
+    show('JS 报错：'+m+'\n位置：'+String(src||'').split('/').pop()+':'+l+':'+c);
+    return false;
+  };
+  window.addEventListener('unhandledrejection',function(e){
+    var r=e&&e.reason; show('Promise 报错：'+((r&&r.message)||r));
+  });
+  setTimeout(function(){
+    var p=document.getElementById('page');
+    if(p&&p.children.length===0&&!document.getElementById('__diag')){
+      show('页面过了 8 秒还是空的：HTML 到了，但脚本没跑起来。\n把这一屏截图发我。');
+    }
+  },8000);
+})();
+</script>
+<title>个人台账</title><style>
+:root{--void:#210000;--side:#2E0000;--main:#3A0404;--card:#3E0707;
+--frame:rgba(224,150,150,.30);--frame-mid:rgba(224,140,140,.42);--frame-hi:rgba(230,110,110,.58);
+--red:#B80000;--blue:#3794FF;--blue-t:#8FC2FF;--purple:#967EF5;--purple-t:#BCA9FF;
+--txt:#F8F8F8;--txt2:#D5CBCB;--gray:#B39E9E;--gray-dim:#A38585;--gold:#D8B48C}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--void);color:var(--txt);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:0}
+.side{width:212px;flex:0 0 212px;background:var(--side);border-right:1px solid var(--frame-mid);
+display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid rgba(230,130,130,.16)}
+.mark{width:32px;height:32px;border-radius:9px;background:var(--purple);color:#1B0B36;font-size:15px;
+font-weight:800;display:grid;place-items:center;flex:0 0 32px}
+.brand b{display:block;font-size:13.5px}.brand small{display:block;font-size:9.5px;color:var(--gray-dim);margin-top:2px}
+.nav{padding:10px 0;flex:1;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:12.5px;color:var(--txt2);
+text-decoration:none;position:relative;cursor:pointer}
+.nav a svg{width:15px;height:15px;flex:0 0 15px;color:var(--gray)}
+.nav a em{margin-left:auto;font-style:normal;font-size:10px;color:var(--gray-dim)}
+.nav a:hover{background:rgba(255,255,255,.04)}
+.nav a.on{background:rgba(184,0,0,.20);color:#fff}
+.nav a.on:before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--red)}
+.nav a.on svg{color:#E03A3A}
+.grp{padding:14px 16px 6px;font-size:9.5px;letter-spacing:.22em;color:#8A6A6A}
+.side-foot{padding:12px 16px;border-top:1px solid rgba(230,130,130,.14);font-size:10px;color:var(--gray-dim);line-height:1.7}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:
+radial-gradient(760px 300px at 76% -14%,rgba(184,0,0,.26),transparent 72%),var(--main);height:100vh}
+.topbar{height:58px;flex:0 0 58px;display:flex;align-items:center;gap:14px;padding:0 22px;
+border-bottom:1px solid var(--frame-mid);background:rgba(0,0,0,.14)}
+.topbar .date{font-size:13px;color:var(--txt2)}.topbar .date b{color:#fff;margin-right:8px}
+.topbar .rt{margin-left:auto;font-size:11px;color:var(--gray-dim)}
+.content{flex:1;overflow-y:auto;padding:16px 22px 26px;display:grid;gap:15px;
+grid-auto-rows:min-content;align-content:start}
+.content::-webkit-scrollbar{width:8px}.content::-webkit-scrollbar-thumb{background:#5A0000;border-radius:8px}
+.principles{position:relative;border:1px solid var(--frame-hi);border-radius:12px;
+background:linear-gradient(135deg,#420707,#380303 58%,#320000);padding:15px 18px 14px 20px;overflow:hidden}
+.principles:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+background:linear-gradient(180deg,#E00000,#8D0505)}
+.p-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.p-head h3{margin:0;font-size:14px;letter-spacing:.05em}
+.p-head .tag{font-size:10px;color:var(--blue-t);background:rgba(55,148,255,.14);
+border:1px solid rgba(55,148,255,.42);border-radius:5px;padding:2px 7px}
+.p-head .link{margin-left:auto;font-size:11px;color:var(--blue-t);cursor:pointer}
+.p-list{display:grid;gap:8px}
+.p-item{display:flex;gap:10px;align-items:baseline}
+.p-item i{font-style:normal;font-size:10.5px;color:var(--gray-dim);font-weight:700;flex:0 0 18px}
+.p-item .t{font-size:13.5px;line-height:1.6;color:#FFF6F6}
+.p-item .s{display:block;font-size:10px;color:var(--gray);margin-top:3px;line-height:1.5}
+.p-item .np{font-size:9px;color:var(--blue-t);background:rgba(55,148,255,.14);
+border:1px solid rgba(55,148,255,.42);border-radius:4px;padding:1px 5px;margin-left:7px;vertical-align:1.5px}
+.p-item .wt{font-size:9px;color:var(--gold);background:rgba(216,180,140,.12);
+border:1px solid rgba(216,180,140,.40);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1.5px}
+.p-foot{margin-top:11px;font-size:10px;color:var(--gray-dim)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.kpi{border:1px solid var(--frame);border-radius:11px;background:var(--card);padding:12px 14px 13px;
+position:relative;display:flex;flex-direction:column}
+.k-head{display:flex;align-items:center;gap:7px}
+.k-head span{font-size:11px;color:var(--gray)}
+.k-head .st{margin-left:auto;font-size:9px;padding:2px 6px;border-radius:4px;color:var(--blue-t);
+background:rgba(55,148,255,.12);border:1px solid rgba(55,148,255,.38)}
+.big{display:flex;align-items:baseline;gap:7px;margin-top:7px}
+.big b{font-size:26px;font-weight:600;color:#fff;line-height:1.15}
+.big u{font-size:12px;color:var(--txt2);text-decoration:none}
+.big em{font-style:normal;font-size:11px;color:var(--gray-dim)}
+.sub{font-size:10.5px;color:var(--gray-dim);line-height:1.6;margin-top:auto;padding-top:8px}
+.mini{margin-top:9px;display:grid;gap:1px;border-top:1px solid rgba(224,150,150,.14);padding-top:7px}
+.mrow{display:grid;grid-template-columns:13px minmax(0,1fr) auto auto;gap:6px;align-items:center;
+font-size:10.5px;color:var(--txt2);line-height:1.45;padding:3px 2px;border-radius:6px;
+transition:opacity .3s ease,height .28s ease,padding .28s ease,margin .28s ease,background .15s}
+.mrow:hover{background:rgba(255,255,255,.035)}
+.mrow i{font-style:normal;color:var(--gray-dim);font-size:9px;font-weight:700;text-align:center}
+.mrow .nm{position:relative;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mrow .nm::after{content:'';position:absolute;left:0;top:54%;height:1px;width:0;
+background:currentColor;transition:width .28s ease}
+.mrow.done .nm{color:#8C7676}.mrow.done .nm::after{width:100%}
+.mrow.done{opacity:.5}.mrow.busy{pointer-events:none;opacity:.55}
+.mrow em{font-style:normal;font-size:9.5px;color:var(--gray-dim);white-space:nowrap}
+.mrow em.red{color:#FFB0B0}.mrow em.gold{color:var(--gold)}
+.mops{display:flex;gap:3px;opacity:.42;transition:opacity .18s}
+.mrow:hover .mops{opacity:1}
+.mops button{width:19px;height:19px;padding:0;display:grid;place-items:center;cursor:pointer;
+background:rgba(0,0,0,.22);border:1px solid rgba(224,150,150,.26);border-radius:5px;
+color:var(--gray);transition:.15s}
+.mops button:hover{color:#fff;border-color:rgba(224,150,150,.62);background:rgba(184,0,0,.28)}
+.mops button.ok:hover{border-color:#E03A3A;background:rgba(184,0,0,.42)}
+.mops button.on{color:var(--blue-t);border-color:rgba(55,148,255,.52);
+background:rgba(55,148,255,.14);opacity:1}
+.mops svg{width:11px;height:11px;display:block}
+.mrow.popped{animation:pop .32s ease}
+@keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+/* 任务选择弹层 */
+.mask{position:fixed;inset:0;background:rgba(18,0,0,.74);z-index:90;opacity:0;
+pointer-events:none;transition:opacity .18s}
+.mask.on{opacity:1;pointer-events:auto}
+.panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%);width:min(720px,93vw);
+max-height:76vh;background:#3E0707;border:1px solid rgba(224,150,150,.36);border-radius:14px;
+z-index:91;display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;
+box-shadow:0 26px 80px rgba(0,0,0,.66);transition:opacity .18s,transform .18s}
+.panel.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.wbh{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid rgba(224,150,150,.2)}
+.wbh h4{margin:0;font-size:13px;color:#fff}.wbh span{font-size:10.5px;color:var(--gray-dim)}
+.wbh button{margin-left:auto;background:none;border:none;color:var(--gray);cursor:pointer;font-size:18px;line-height:1}
+.wbq{padding:10px 16px;border-bottom:1px solid rgba(224,150,150,.14)}
+.wbq input{width:100%;background:rgba(0,0,0,.26);border:1px solid rgba(224,150,150,.26);
+border-radius:8px;padding:8px 11px;color:var(--txt);font-size:12px;font-family:inherit;outline:none}
+.wbq input:focus{border-color:rgba(55,148,255,.6)}
+.wbl{flex:1;overflow-y:auto;padding:6px 8px 10px}
+.wbitem{padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.wbitem:hover{background:rgba(255,255,255,.05);border-color:rgba(224,150,150,.24)}
+.wbitem .t{font-size:11.5px;color:var(--txt);line-height:1.5;display:block}
+.wbitem .m{font-size:9.5px;color:var(--gray-dim);margin-top:3px;display:flex;gap:8px}
+.wbitem .m b{color:var(--blue-t);font-weight:500}
+.wbitem .p{font-size:9px;color:var(--gray);margin-top:3px;word-break:break-all;opacity:.75}
+.wbempty{padding:26px 16px;text-align:center;font-size:11.5px;color:var(--gray-dim);line-height:1.8}
+.wbfoot{padding:9px 16px;border-top:1px solid rgba(224,150,150,.18);font-size:9.5px;
+color:var(--gray-dim);display:flex;gap:10px;align-items:center}
+.pfoot a{color:var(--blue-t);cursor:pointer;text-decoration:none}
+.undo{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(14px);opacity:0;
+pointer-events:none;transition:opacity .2s,transform .2s;background:#45090B;
+border:1px solid rgba(224,150,150,.40);border-radius:999px;padding:9px 10px 9px 16px;
+display:flex;align-items:center;gap:12px;z-index:80;box-shadow:0 14px 40px rgba(0,0,0,.5);
+font-size:11.5px;color:var(--txt2);max-width:92vw}
+.undo.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.undo span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.undo button{background:rgba(55,148,255,.16);border:1px solid rgba(55,148,255,.45);
+color:var(--blue-t);border-radius:999px;padding:4px 12px;font-size:11px;cursor:pointer;
+font-family:inherit;white-space:nowrap;flex:none}
+.sub b{color:var(--gold);font-weight:500}
+.kpi.na{border-color:rgba(216,180,140,.24)}
+.kpi.na .big b{color:var(--gold);opacity:.9;font-size:19px;font-weight:500}
+.trio{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:9px}
+.trio div{background:rgba(0,0,0,.16);border:1px solid rgba(224,150,150,.14);border-radius:8px;padding:8px 10px}
+.trio span{display:block;font-size:10px;color:var(--gray)}
+.trio b{display:block;font-size:16px;color:var(--gold);opacity:.85;margin-top:3px;font-weight:500}
+.t5{display:grid;grid-template-columns:13px 86px minmax(0,1fr) 40px;gap:8px;align-items:center;margin-top:7px}
+.t5 i{font-style:normal;color:var(--gray-dim);font-size:9.5px}
+.t5 .ph{height:15px;border-radius:4px;border:1px dashed rgba(224,140,140,.34);background:rgba(0,0,0,.14)}
+.t5 .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
+.t5 .bar s{display:block;height:100%;background:#5C2222}
+.t5 .tm{color:var(--gold);opacity:.8;font-size:10px;text-align:right}
+.sec-head{display:flex;align-items:baseline;gap:10px;margin-top:2px}
+.sec-head h3{margin:0;font-size:13.5px}.sec-head span{font-size:11px;color:var(--gray)}
+.grid8{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mod{border:1px solid var(--frame);border-radius:10px;background:var(--card);padding:12px 13px;
+min-height:100px;display:flex;flex-direction:column;position:relative;cursor:pointer;text-align:left}
+.mod:hover{border-color:var(--frame-hi);background:#430808}
+.mod svg{width:16px;height:16px;color:var(--gray);margin-bottom:8px}
+.mod h4{margin:0;font-size:12.5px;color:#fff}
+.mod p{margin:4px 0 0;font-size:10.5px;color:var(--gray);line-height:1.5}
+.mod .num{margin-top:auto;padding-top:7px;font-size:11px;color:var(--txt2)}
+.mod.off{opacity:.6}
+.mod .st{position:absolute;right:10px;top:11px;font-size:9px;padding:2px 6px;border-radius:4px}
+.st.live{color:var(--txt2);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.st.soon{color:var(--blue-t);background:rgba(55,148,255,.12);border:1px solid rgba(55,148,255,.38)}
+.twocol{display:grid;grid-template-columns:1.45fr 1fr;gap:11px}
+.card{border:1px solid var(--frame);border-radius:10px;background:var(--card);padding:13px 15px}
+.card h4{margin:0 0 10px;font-size:12.5px;color:var(--txt2);font-weight:600}
+.row{display:grid;grid-template-columns:70px 1fr auto;gap:9px;align-items:center;padding:7px 0;
+border-top:1px solid rgba(224,150,150,.10);font-size:12px}
+.row:first-of-type{border-top:0}
+.row time{color:var(--gray-dim);font-size:10.5px}
+.row .txt{color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .to{font-size:10px;color:var(--blue-t);background:rgba(55,148,255,.12);
+border:1px solid rgba(55,148,255,.30);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.tip{display:flex;gap:9px;align-items:flex-start;padding:6px 0;font-size:11.5px;line-height:1.6;color:var(--txt2)}
+.tip i{flex:0 0 5px;height:5px;border-radius:50%;background:var(--red);margin-top:7px}
+.toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(16px);opacity:0;
+background:#4A0808;border:1px solid var(--frame-hi);color:#fff;font-size:12.5px;padding:10px 18px;
+border-radius:10px;pointer-events:none;transition:.22s;box-shadow:0 14px 40px -18px #000;z-index:99}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ---- 内页通用 ---- */
+.pbar{display:flex;align-items:baseline;gap:11px}
+.pbar h2{margin:0;font-size:17px;letter-spacing:.02em}
+.pbar .pmeta{font-size:11px;color:var(--gray-dim)}
+.pbar .pstage{margin-left:auto;font-size:10px;padding:2px 8px;border-radius:5px;color:var(--blue-t);
+background:rgba(55,148,255,.12);border:1px solid rgba(55,148,255,.38)}
+.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.toolbar input{flex:1;min-width:200px;background:rgba(0,0,0,.22);border:1px solid var(--frame);
+border-radius:8px;color:#fff;font-size:12px;padding:8px 11px;font-family:inherit}
+.toolbar input::placeholder{color:#8A6A6A}
+.toolbar input:focus{outline:none;border-color:var(--frame-hi)}
+.toolbar select{background:rgba(0,0,0,.22);border:1px solid var(--frame);border-radius:8px;
+color:var(--txt2);font-size:11.5px;padding:8px 9px;font-family:inherit;max-width:230px}
+.toolbar .cnt{font-size:11px;color:var(--gray-dim);white-space:nowrap}
+.tlist{border:1px solid var(--frame);border-radius:10px;background:var(--card);overflow:hidden}
+.trow{display:grid;grid-template-columns:120px 66px 1fr;gap:10px;align-items:baseline;
+padding:9px 14px;border-top:1px solid rgba(224,150,150,.10);font-size:12px}
+.trow:first-child{border-top:0}
+.trow .sh{font-size:10px;color:var(--blue-t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .dt{font-size:10.5px;color:var(--gray-dim);white-space:nowrap}
+.trow .tx{color:var(--txt2);line-height:1.55;word-break:break-word}
+.more{display:block;width:100%;margin-top:10px;padding:9px;background:rgba(0,0,0,.18);
+border:1px dashed rgba(224,140,140,.34);border-radius:8px;color:var(--txt2);font-size:11.5px;
+font-family:inherit;cursor:pointer}
+.rrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;padding:9px 14px;
+border-top:1px solid rgba(224,150,150,.10)}
+.rrow:first-child{border-top:0}
+.rrow b{font-size:12.5px;color:#fff;font-weight:500;line-height:1.5}
+.rrow .rl{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap}
+.rrow .dt{font-size:10.5px;color:var(--gray-dim);white-space:nowrap}
+.more:hover{border-color:var(--frame-hi);color:#fff}
+.tk{display:flex;gap:11px;align-items:flex-start;padding:11px 14px;
+border-top:1px solid rgba(224,150,150,.10);cursor:pointer}
+.tk:hover{background:rgba(255,255,255,.03)}
+.tk .box{flex:0 0 15px;height:15px;margin-top:2px;border:1.5px solid var(--gray-dim);border-radius:4px}
+.tk.hi .box{border-color:#E03A3A}
+.tk .body{min-width:0}
+.tk .tt{font-size:13px;line-height:1.55;color:#fff;word-break:break-word}
+.tk .mt{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:10px;color:var(--gray-dim)}
+.tk .mt b{font-weight:500;color:var(--gold)}
+.tk .nt{margin-top:5px;font-size:10.5px;color:var(--gray);line-height:1.55}
+.pill{display:inline-block;font-size:9.5px;padding:1px 6px;border-radius:4px;
+background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);color:var(--txt2)}
+.pill.red{background:rgba(184,0,0,.20);border-color:rgba(230,110,110,.45);color:#FFB0B0}
+.pill.blue{background:rgba(55,148,255,.12);border-color:rgba(55,148,255,.38);color:var(--blue-t)}
+.pill.gold{background:rgba(216,180,140,.12);border-color:rgba(216,180,140,.40);color:var(--gold)}
+.wtbl{width:100%;border-collapse:collapse;font-size:12px}
+.wtbl th{text-align:left;font-size:10.5px;color:var(--gray);font-weight:500;padding:0 10px 8px;
+border-bottom:1px solid rgba(224,150,150,.18)}
+.wtbl td{padding:8px 10px;border-top:1px solid rgba(224,150,150,.10);color:var(--txt2);
+vertical-align:top;line-height:1.55}
+.wtbl td.nm{color:#fff;font-size:12.5px}
+.wtbl .dirty{color:var(--gold);font-size:9.5px}
+.tabs{display:flex;gap:7px;flex-wrap:wrap}
+.tabs button{background:rgba(0,0,0,.18);border:1px solid var(--frame);color:var(--txt2);
+font-size:11.5px;padding:6px 12px;border-radius:7px;font-family:inherit;cursor:pointer}
+.tabs button.on{background:rgba(184,0,0,.24);border-color:var(--frame-hi);color:#fff}
+.novel{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 14px;
+border-top:1px solid rgba(224,150,150,.10);font-size:12px}
+.novel:first-child{border-top:0}
+.novel .nm{color:#fff;font-size:12.5px}
+.novel .au{font-size:10.5px;color:var(--gray-dim);margin-left:6px}
+.novel .de{font-size:10.5px;color:var(--gray);margin-top:3px;line-height:1.55}
+.novel .sc{font-size:15px;color:var(--gold);font-weight:600;text-align:right}
+.novel .tg{margin-top:4px;display:flex;gap:4px;flex-wrap:wrap}
+.empty{padding:26px;text-align:center;font-size:12px;color:var(--gray-dim);line-height:1.8}
+.ph{border:1px dashed rgba(224,140,140,.34);border-radius:10px;background:rgba(0,0,0,.14);
+padding:18px 20px}
+.ph h3{margin:0 0 8px;font-size:13.5px;color:var(--txt2)}
+.ph ul{margin:0;padding-left:18px;font-size:11.5px;color:var(--gray);line-height:1.85}
+.ph ul b{color:var(--txt2);font-weight:500}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.lg{border:1px solid var(--frame);border-radius:9px;background:var(--card);padding:10px 12px}
+.lg .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.lg b{font-size:12px}.lg p{margin:5px 0 0;font-size:10.5px;color:var(--gray);line-height:1.55}
+@media(max-width:900px){
+ .side{display:none}.main{height:auto}.content{grid-template-columns:1fr}
+ .kpis,.grid8,.twocol,.legend{grid-template-columns:1fr}
+ .trow{grid-template-columns:1fr 60px}.trow .tx{grid-column:1/-1}
+}
+@media(max-width:900px){
+ /* 手机上没有 hover，按钮常显并放大到好点 */
+ .mops{opacity:1;gap:5px}
+ .mops button{width:24px;height:24px}
+ .mops svg{width:13px;height:13px}
+ .mrow{padding:5px 1px;font-size:11px}
+ .panel{width:96vw;max-height:82vh}
+ .wbitem .t{font-size:12.5px}
+}
+</style></head>
+<body>
+<aside class="side">
+  <div class="brand"><div class="mark">台</div><div><b>个人台账</b><small>外出版 · 只读</small></div></div>
+  <nav class="nav" id="nav"></nav>
+  <div class="side-foot">数据：个人台账.xlsx<br><span id="gen"></span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="date"><b id="d-date"></b><span id="d-tip">今天的台账，从哪件事开始？</span></div>
+    <div class="rt">外出版 · 只读快照</div>
+  </div>
+  <div class="content" id="page"></div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="undo" id="undo"><span></span><button>撤销</button></div>
+<div class="mask" id="mask"></div>
+<div class="panel" id="panel">
+  <div class="wbh"><h4 id="panelTitle">关联 WorkBuddy 任务</h4>
+    <span id="pcount"></span><button id="panelClose" title="关闭">×</button></div>
+  <div class="wbq"><input id="pq" placeholder="搜标题 / 项目 / 路径…"></div>
+  <div class="wbl" id="plist"></div>
+  <div class="wbfoot"><span>点一条就写进台账</span>
+    <a id="pcopy" style="margin-left:auto">复制当前路径</a>
+    <a id="pclear">取消关联</a></div>
+</div>
+<script>
+const D = {"generated_at": "2026/10/23 01:14", "today": "2026/10/23", "weekday": "周五", "principles": [{"no": "01", "t": "保护身体健康第一。", "new": false, "todo": false, "s": "6 心理问题分析 10/12「原文仅本机可见」"}, {"no": "02", "t": "多陪家人。", "new": false, "todo": false, "s": "6 世俗能力 8/18「原文仅本机可见」"}, {"no": "03", "t": "专注自己的生活，工作学习次要。", "new": false, "todo": false, "s": "6 世俗能力 8/18「原文仅本机可见」；6 念头 10/15「原文仅本机可见」"}, {"no": "04", "t": "接受反复，别指望一劳永逸。", "new": true, "todo": false, "s": "6 心理问题分析 10/17「原文仅本机可见」"}, {"no": "05", "t": "做努力一次、收获多次的事。", "new": true, "todo": false, "s": "10/22 你口述（10/12 原文只写了「复利」二字）：「原文仅本机可见」"}, {"no": "06", "t": "不管干什么，都以延长生命为准则。", "new": true, "todo": false, "s": "10/22 你口述（10/12 原文只写了「长寿」二字）：「原文仅本机可见」"}], "kpi": {"todo_open": 5, "todo_high": 2, "oldest_days": 11, "oldest_item": {"事项": "去医院做一次全面体检（含之前医生建议、因价格没做的胃部检查）", "创建日期": "2026/10/12", "优先级": "高"}, "wish_total": 23, "wish_nohw": 13, "wish_pct": 57, "wish_dirty": 15, "flow_total": 106, "today_n": 0, "expense": null, "balance": null, "impulse": null, "screen_avg": null, "money_rows": 0, "time_rows": 0}, "modules": [{"name": "总清单", "desc": "所有记录的统一流水，可筛可搜", "key": "all", "stage": "", "num": "612 条"}, {"name": "待办", "desc": "点勾即消失，误触可拉回", "key": "todo", "stage": "", "num": "5 件未完成"}, {"name": "欲望清单", "desc": "想买的先进来冷静，不是购物车", "key": "wish", "stage": "", "num": "23 项在观察"}, {"name": "知识体系", "desc": "收藏精华 + 念头库 + 认知金字塔", "key": "know", "stage": "", "num": "收藏 117"}, {"name": "购物指南", "desc": "复购四态：灰 / 绿 / 黄 / 白", "key": "shop", "stage": "G7", "num": "未建立"}, {"name": "账本", "desc": "支付宝 / 微信账单导入 + 月报", "key": "money", "stage": "G5", "num": "0 笔"}, {"name": "时间台账", "desc": "屏幕时间 + 24h 时间轴", "key": "time", "stage": "G8", "num": "0 条"}, {"name": "功课与研究", "desc": "买东西先做功课，深挖出研究报告", "key": "research", "stage": "G6/G9", "num": "未建立"}], "recent": [], "totals": {"rows": 612, "sheets": 26, "know": 117, "novels": 88, "dramas": 23, "animes": 6, "thoughts": 0}, "todos": [{"row": 2, "t": "去医院做一次全面体检（含之前医生建议、因价格没做的胃部检查）", "vt": "去医院做一次全面体检（含之前医生建议、因价格没做的胃部检查）", "st": "未完成", "p": "高", "cat": "健康", "d": "2026/10/12", "age": 11, "note": "血液粘稠史；怀疑常规体检漏查；10/12 提出，至今未落实", "src": "", "link": ""}, {"row": 3, "t": "查清楚长期乏力/低电力运行的原因（甲状腺等相关指标）", "vt": "查清楚长期乏力/低电力运行的原因（甲状腺等相关指标）", "st": "未完成", "p": "高", "cat": "健康", "d": "2026/10/17", "age": 6, "note": "休息大半个月仍乏力；自查排除维D缺乏；怀疑潮湿墙面霉菌", "src": "", "link": ""}, {"row": 6, "t": "收拾家里柜子：水杯全部集中到瑜伽垫对面柜子，按品类分层", "vt": "收拾家里柜子：水杯全部集中到瑜伽垫对面柜子，按品类分层", "st": "未完成", "p": "中", "cat": "家务", "d": "2026/10/13", "age": 10, "note": "每层都有重复品类，看着难受", "src": "", "link": ""}, {"row": 5, "t": "找地方做一次专业妆造，看别人怎么处理底妆/修容/提亮，再决定买什么", "vt": "找地方做一次专业妆造，看别人怎么处理底妆/修容/提亮，再决定买什么", "st": "未完成", "p": "中", "cat": "形象", "d": "2026/10/15", "age": 8, "note": "目标是摸清短板后一次性买对，不再盲买粉底色号", "src": "", "link": ""}, {"row": 4, "t": "找一家门店体验侧柏叶/茶枯粉专业洗头（丝域养发馆这类）", "vt": "找一家门店体验侧柏叶/茶枯粉专业洗头（丝域养发馆这类）", "st": "未完成", "p": "中", "cat": "形象", "d": "2026/10/17", "age": 6, "note": "自己操作洗完头发打结成一坨", "src": "", "link": ""}], "wishes": [{"row": 2, "n": "不锈钢筷子", "vn": "不锈钢筷子", "br": "顺达", "need": "", "dirty": true, "hw": "有", "hwt": "小红书有人买了测试仪，大部分只能信国外的，muji也不行。 双枪 广意 only cook都可以，only cook最漂亮。wmf也是不用测的硬气牌子，送人很好。后来第二天又刷到一…", "top": "安全卫生", "way": "网购", "bought": "顺达", "d": "2026/09/21", "link": ""}, {"row": 3, "n": "tom ford眼影", "vn": "tom ford眼影", "br": "否", "need": "Y", "dirty": true, "hw": "无", "hwt": "", "top": "化妆", "way": "二手", "bought": "否", "d": "", "link": ""}, {"row": 4, "n": "植村秀眉笔", "vn": "植村秀眉笔", "br": "已购买 80不到全新的 日上免税店购入", "need": "Y", "dirty": true, "hw": "无", "hwt": "", "top": "化妆", "way": "二手", "bought": "已购买 80不到全新的 日上免税店购入", "d": "", "link": ""}, {"row": 5, "n": "rc", "vn": "rc", "br": "不用了找到了", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "二手", "bought": "不用了找到了", "d": "", "link": ""}, {"row": 6, "n": "hourglass 提亮 creme", "vn": "hourglass 提亮 creme", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "二手", "bought": "", "d": "", "link": ""}, {"row": 7, "n": "尼龙单肩小方包", "vn": "尼龙单肩小方包", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "需要挑款式", "bought": "", "d": "", "link": ""}, {"row": 8, "n": "zara 4592018 微喇九分裤 蓝色", "vn": "zara 4592018 微喇九分裤 蓝色", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "", "bought": "", "d": "", "link": ""}, {"row": 9, "n": "prada 杏仁叶保温杯", "vn": "prada 杏仁叶保温杯", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "二手", "bought": "", "d": "", "link": ""}, {"row": 10, "n": "pazzion 红色漆皮 37", "vn": "pazzion 红色漆皮 37", "br": "", "need": "Y", "dirty": true, "hw": "有", "hwt": "ai跟我找的差不多，没有特别优惠又符合的", "top": "", "way": "二手", "bought": "", "d": "", "link": ""}, {"row": 11, "n": "bobbi brown 橘子面霜", "vn": "bobbi brown 橘子面霜", "br": "找ai淘了一个，26.3月过期的，按国际5年其实没过期，试试吧，60包邮，2/3余量", "need": "Y", "dirty": true, "hw": "无", "hwt": "", "top": "化妆", "way": "二手", "bought": "找ai淘了一个，26.3月过期的，按国际…", "d": "2026/10/07", "link": ""}, {"row": 12, "n": "边夹", "vn": "边夹", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "需要挑款式", "bought": "", "d": "", "link": ""}, {"row": 13, "n": "瑜伽垫", "vn": "瑜伽垫", "br": "", "need": "Y", "dirty": true, "hw": "无", "hwt": "", "top": "运动健康", "way": "", "bought": "", "d": "", "link": ""}, {"row": 14, "n": "颈椎枕", "vn": "颈椎枕", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "运动健康", "way": "", "bought": "", "d": "", "link": ""}, {"row": 15, "n": "生发精华 the ordinary  多重胜肽", "vn": "生发精华 the ordinary  多重胜肽", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "", "bought": "", "d": "", "link": ""}, {"row": 16, "n": "生发精华 馥绿德雅 三相精华", "vn": "生发精华 馥绿德雅 三相精华", "br": "", "need": "", "dirty": true, "hw": "无", "hwt": "", "top": "", "way": "", "bought": "", "d": "", "link": ""}, {"row": 17, "n": "打卡旅游地点地图", "vn": "打卡旅游地点地图", "br": "否", "need": "中", "dirty": false, "hw": "有", "hwt": "未做", "top": "旅行打卡记录", "way": "待定", "bought": "否", "d": "2026/10/20", "link": ""}, {"row": 18, "n": "瑜伽服套装", "vn": "瑜伽服套装", "br": "否", "need": "中", "dirty": false, "hw": "有", "hwt": "未做", "top": "练瑜伽", "way": "待定", "bought": "否", "d": "2026/10/20", "link": ""}, {"row": 19, "n": "PAZZION 漆皮芭蕾舞鞋", "vn": "PAZZION 漆皮芭蕾舞鞋", "br": "否", "need": "高", "dirty": false, "hw": "有", "hwt": "闲鱼二手款 vs 淘宝茄子鞋新款，两条链接都存了", "top": "芭蕾鞋", "way": "闲鱼/淘宝", "bought": "否", "d": "2026/10/14", "link": ""}, {"row": 20, "n": "PAZZION 茄子鞋 漆皮平底鞋", "vn": "PAZZION 茄子鞋 漆皮平底鞋", "br": "否", "need": "中", "dirty": false, "hw": "有", "hwt": "假一赔四店", "top": "芭蕾鞋同款新款", "way": "淘宝", "bought": "否", "d": "2026/10/14", "link": ""}, {"row": 21, "n": "青蛙瑜伽薄垫", "vn": "青蛙瑜伽薄垫", "br": "否", "need": "中", "dirty": false, "hw": "有", "hwt": "—", "top": "瑜伽", "way": "闲鱼", "bought": "否", "d": "2026/10/08", "link": ""}, {"row": 22, "n": "植村秀眉笔", "vn": "植村秀眉笔", "br": "否", "need": "高", "dirty": false, "hw": "有", "hwt": "—", "top": "画眉", "way": "闲鱼", "bought": "否", "d": "2026/10/08", "link": ""}, {"row": 23, "n": "哈他专业瑜伽垫", "vn": "哈他专业瑜伽垫", "br": "否", "need": "中", "dirty": false, "hw": "有", "hwt": "几乎全新，适合初学者/家用", "top": "瑜伽", "way": "闲鱼", "bought": "否", "d": "2026/10/07", "link": ""}, {"row": 24, "n": "yottoy 瑜伽垫", "vn": "yottoy 瑜伽垫", "br": "否", "need": "中", "dirty": false, "hw": "有", "hwt": "全新未使用，天猫超市购入，北京定福庄可自提", "top": "瑜伽", "way": "闲鱼", "bought": "否", "d": "2026/10/07", "link": ""}], "sheets": [{"name": "0 说明", "n": 25}, {"name": "1 待办", "n": 5}, {"name": "1 已完成", "n": 0}, {"name": "1 工具需求池", "n": 62}, {"name": "1 通用经验", "n": 8}, {"name": "1 配置与心得", "n": 6}, {"name": "2 订单", "n": 0}, {"name": "3 账本", "n": 0}, {"name": "4 时间记录", "n": 0}, {"name": "5 购物清单", "n": 23}, {"name": "5 礼物灵感", "n": 8}, {"name": "5 二手品牌", "n": 3}, {"name": "5 送礼收礼", "n": 3}, {"name": "6 奶茶草稿本", "n": 2}, {"name": "7 小说", "n": 88}, {"name": "7 动漫", "n": 6}, {"name": "7 剧", "n": 23}, {"name": "7 漫画", "n": 3}, {"name": "档·旅游 2025-10日本", "n": 18}, {"name": "档·旅游 2025-10日本东进阪出", "n": 41}, {"name": "档·旅游 2026-05福建", "n": 54}, {"name": "档·旅游 2026-06昆明广港澳", "n": 182}, {"name": "档·旅游 2026-09上海九寨沟广州", "n": 47}, {"name": "档·旅游 潮汕", "n": 22}, {"name": "档·旅游 适宜月份", "n": 4}, {"name": "档·旅游 高加索", "n": 4}], "all": [{"s": "1 配置与心得", "d": "2026/10/20", "t": "飞书自建应用 App ID：cli_aa5dc39ec0789d29（App Secret 未记录在台账，见本机密钥库）"}, {"s": "5 购物清单", "d": "2026/10/20", "t": "打卡旅游地点地图"}, {"s": "5 购物清单", "d": "2026/10/20", "t": "瑜伽服套装"}, {"s": "1 待办", "d": "2026/10/17", "t": "查清楚长期乏力/低电力运行的原因（甲状腺等相关指标）"}, {"s": "1 待办", "d": "2026/10/17", "t": "找一家门店体验侧柏叶/茶枯粉专业洗头（丝域养发馆这类）"}, {"s": "1 工具需求池", "d": "2026/10/17", "t": "2026/10/17 ｜ 对话问专家即可 ｜ 28"}, {"s": "1 工具需求池", "d": "2026/10/16", "t": "2026/10/16 ｜ 对话问专家即可 ｜ 18"}, {"s": "1 待办", "d": "2026/10/15", "t": "找地方做一次专业妆造，看别人怎么处理底妆/修容/提亮，再决定买什么"}, {"s": "1 工具需求池", "d": "2026/10/15", "t": "2026/10/15 ｜ 55 ｜ 整理夸克书签"}, {"s": "1 工具需求池", "d": "2026/10/15", "t": "2026/10/15 ｜ 综合工具 · 相册截图与收藏加购自动做功课 ｜ 采集+功课"}, {"s": "5 购物清单", "d": "2026/10/14", "t": "PAZZION 漆皮芭蕾舞鞋"}, {"s": "5 购物清单", "d": "2026/10/14", "t": "PAZZION 茄子鞋 漆皮平底鞋"}, {"s": "1 待办", "d": "2026/10/13", "t": "收拾家里柜子：水杯全部集中到瑜伽垫对面柜子，按品类分层"}, {"s": "1 配置与心得", "d": "2026/10/13", "t": "自动化任务主题 ID：取关执行状态（小红书+抖音共用）= unfollow-n8r4k2p6；精选日报（早/晚报）= brief-q5w8t3m7；闲鱼捡漏日报 = xianyu-c4j9h6…"}, {"s": "1 待办", "d": "2026/10/12", "t": "去医院做一次全面体检（含之前医生建议、因价格没做的胃部检查）"}, {"s": "1 工具需求池", "d": "2026/10/12", "t": "2026/10/12 ｜ 日记与心路历程软件 ｜ 记录+提问"}, {"s": "1 工具需求池", "d": "2026/10/10", "t": "2026/10/10 ｜ 分析和几轮 ｜ 满意"}, {"s": "1 工具需求池", "d": "2026/10/08", "t": "2026/10/08 ｜ 方案 ｜ 12"}, {"s": "1 工具需求池", "d": "2026/10/08", "t": "2026/10/08 ｜ 13 ｜ 精准推荐 购物 比价 购物功课"}, {"s": "1 工具需求池", "d": "2026/10/08", "t": "2026/10/08 ｜ 已完成，内容高深需要消化 ｜ 16"}, {"s": "1 工具需求池", "d": "2026/10/08", "t": "2026/10/08 ｜ 分析和几轮 ｜ 17"}, {"s": "1 配置与心得", "d": "2026/10/08", "t": "南京绿灯活动日报任务 ID：nj-green-x9k4m7q2"}, {"s": "1 配置与心得", "d": "2026/10/08", "t": "日报站点：https://daily-briefing-13981.app.workbuddy.host/（商品价格提醒雷达 /radar/）"}, {"s": "5 购物清单", "d": "2026/10/08", "t": "青蛙瑜伽薄垫"}, {"s": "5 购物清单", "d": "2026/10/08", "t": "植村秀眉笔"}, {"s": "5 购物清单", "d": "2026/10/07", "t": "bobbi brown 橘子面霜"}, {"s": "5 购物清单", "d": "2026/10/07", "t": "哈他专业瑜伽垫"}, {"s": "5 购物清单", "d": "2026/10/07", "t": "yottoy 瑜伽垫"}, {"s": "1 工具需求池", "d": "2026/09/29", "t": "2026/09/29 ｜ 分析和几轮 ｜ 不满意"}, {"s": "1 工具需求池", "d": "2026/09/29", "t": "2026/09/29 ｜ 审计 · 模糊匹配 + 脱敏合并工具 ｜ 数据处理"}, {"s": "1 配置与心得", "d": "2026/09/29", "t": "office"}, {"s": "1 工具需求池", "d": "2026/09/28", "t": "2026/09/28 ｜ 分析和第一次执行就完成了 ｜ 不满意"}, {"s": "1 工具需求池", "d": "2026/09/28", "t": "2026/09/28 ｜ 分析和第一次执行就完成了 ｜ 不需要开发"}, {"s": "1 配置与心得", "d": "2026/09/28", "t": "重装win11，自己做系统盘，小红书遇到好人直接分享激活密钥，豆包告诉我如何顺便合并磁盘"}, {"s": "1 工具需求池", "d": "2026/09/27", "t": "2026/09/27 ｜ 分析和第一次执行就完成了 ｜ 已完成"}, {"s": "1 工具需求池", "d": "2026/09/27", "t": "2026/09/27 ｜ 分析和第一次执行就完成了 ｜ 已完成"}, {"s": "5 购物清单", "d": "2026/09/21", "t": "不锈钢筷子"}, {"s": "1 工具需求池", "d": "", "t": "整理实例花时间的 ｜ 1 ｜ 本地的模糊匹配工具"}, {"s": "1 工具需求池", "d": "", "t": "2.是为了脱敏给大模型一个实例，来进行下一步数据处理用的，等全套都本地程序化了，实操中的大部分例子就不用脱敏了 1.确定要不要接入大模型，再决定要不要脱敏 ｜ 2 ｜ 本地的脱敏工具"}, {"s": "1 工具需求池", "d": "", "t": "3 ｜ 表格维度简化器 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "2026/9/26-2026/9/27 ｜ 十几轮 ｜ 已完成"}, {"s": "1 工具需求池", "d": "", "t": "录音直接有小米转写 ｜ 6 ｜ 语音转文字模型"}, {"s": "1 工具需求池", "d": "", "t": "7 ｜ 文字转文字模型 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "rapidpaddle已经是最优了 ｜ 9 ｜ 图片转文字模型"}, {"s": "1 工具需求池", "d": "", "t": "10 ｜ 整合文件 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "不满意，有可能是本身就没有又好又便宜的酒店，刷咸鱼就是这样 ｜ 15 ｜ 比价 比较 酒店"}, {"s": "1 工具需求池", "d": "", "t": "耗时久 ｜ 19 ｜ 整理小红书抖音收藏夹，整理关注"}, {"s": "1 工具需求池", "d": "", "t": "犯法的，取消吧 ｜ 20 ｜ 免费番剧播放器"}, {"s": "1 工具需求池", "d": "", "t": "犯法的，取消吧 ｜ 21 ｜ 抖音短剧免费查找播放"}, {"s": "1 工具需求池", "d": "", "t": "22 ｜ 客观认识自己 ｜ 能力与发展"}, {"s": "1 工具需求池", "d": "", "t": "22 ｜ 情感心理分析 ｜ 心理与发展"}, {"s": "1 工具需求池", "d": "", "t": "24 ｜ 优质社群挖掘 ｜ 社交与人脉"}, {"s": "1 工具需求池", "d": "", "t": "个人综合app-分析师 ｜ 26 ｜ 找原因"}, {"s": "1 工具需求池", "d": "", "t": "看了记录片大概有数了 ｜ 27 ｜ 摄入健康检测"}, {"s": "1 工具需求池", "d": "", "t": "29 ｜ 学cpa ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "30 ｜ 学物理 数学 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "31 ｜ 学哲学 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "32 ｜ 穿搭 ｜ 生活与娱乐"}, {"s": "1 工具需求池", "d": "", "t": "33 ｜ 家装设计 ｜ 生活与娱乐"}, {"s": "1 工具需求池", "d": "", "t": "34 ｜ 家装电路设计 ｜ 生活与娱乐"}, {"s": "1 工具需求池", "d": "", "t": "35 ｜ 好房挖掘 ｜ 购物"}, {"s": "1 工具需求池", "d": "", "t": "个人综合app-分析师 ｜ 36 ｜ 心理问题分析"}, {"s": "1 工具需求池", "d": "", "t": "个人综合app-分析师 ｜ 37 ｜ 自画像"}, {"s": "1 工具需求池", "d": "", "t": "38 ｜ 根据灵感制作音乐 ｜ 爱好和技能"}, {"s": "1 工具需求池", "d": "", "t": "39 ｜ 学乐理 ｜ 爱好和技能"}, {"s": "1 工具需求池", "d": "", "t": "40 ｜ 好电影挖掘 ｜ 生活与娱乐"}, {"s": "1 工具需求池", "d": "", "t": "41 ｜ 好男人挖掘 ｜ 社交与人脉"}, {"s": "1 工具需求池", "d": "", "t": "42 ｜ 爸妈还有什么需求？可能是他们自己都意识不到的需求，比如滴滴如何能接到更好的单子 ｜ 生活与娱乐"}, {"s": "1 工具需求池", "d": "", "t": "43 ｜ 识人 ｜ 社交与人脉"}, {"s": "1 工具需求池", "d": "", "t": "44 ｜ 总结器 ｜ 能力与发展"}, {"s": "1 工具需求池", "d": "", "t": "45 ｜ 清电脑，提高电脑性能 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "46 ｜ 清手机，提高手机性能 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "48 ｜ 日历日程自动创建 ｜ 工作与学习"}, {"s": "1 工具需求池", "d": "", "t": "49 ｜ 选商品 ｜ 客观的评估到底是苹果手机好还是小米手机好，是我不知道有哪些功能对我其实很有用吗？"}, {"s": "1 工具需求池", "d": "", "t": "50 ｜ 整理淘宝收藏"}, {"s": "1 工具需求池", "d": "", "t": "51 ｜ 整理阿里巴巴收藏"}, {"s": "1 工具需求池", "d": "", "t": "52 ｜ 换发型"}, {"s": "1 工具需求池", "d": "", "t": "53 ｜ 优质内容推送日报，史政地结合的内容我喜欢 ｜ 我之前不是给你做过很多个任务嘛，然后我会一开始跟你说一个提示词，然后在你做的时候，我又逐渐去完善这个提示词或者修改这个提示词。请你回顾一…"}, {"s": "1 工具需求池", "d": "", "t": "54 ｜ 航运壁纸 ｜ 还有就是，我会在任务执行的过程当中慢慢的跟你说我还有一些什么样的需求，那就说明我第一次没有说清楚嘛，也帮我总结一下，我第一次说的需求是什么样的，后来补充的又是什么样的。…"}, {"s": "1 工具需求池", "d": "", "t": "56"}, {"s": "1 工具需求池", "d": "", "t": "57"}, {"s": "1 工具需求池", "d": "", "t": "58"}, {"s": "1 工具需求池", "d": "", "t": "59"}, {"s": "1 通用经验", "d": "", "t": "有没有API限制，没有怎么办"}, {"s": "1 通用经验", "d": "", "t": "开发这些模型用什么方式保存结果最好？做成手机app，还是网页，还是电脑app等"}, {"s": "1 通用经验", "d": "", "t": "别忘了搞点skill 执行老是出错应该就是因为没有什么skill"}, {"s": "1 通用经验", "d": "", "t": "找ai帮忙刷东西，比如闲鱼好货，酒店，会发现ai刷下来好东西和我刷下来搜罗到的差不多，可能是因为真的好东西确实不多"}, {"s": "1 通用经验", "d": "", "t": "接入不同插件"}, {"s": "1 通用经验", "d": "", "t": "使用codex"}, {"s": "1 通用经验", "d": "", "t": "国际酒店档次梯队：顶奢（安缦/四季/宝格丽/半岛/文华东方/莱佛士/雪瓦布兰/One&Only/贝尔蒙；万豪旗下宝格丽、IHG旗下六善）→ 奢华 → 超高端 → 高端 → 中端 → 经济型。注…"}, {"s": "1 通用经验", "d": "", "t": "高德收藏夹没有开放 API：个人开发者 Key + 标准 LBS API 不能读写高德 App 原生收藏夹。替代是「地图小程序 WIA（wia.amap.com）」，可建标记点/文件夹/移动点…"}, {"s": "5 购物清单", "d": "", "t": "tom ford眼影"}, {"s": "5 购物清单", "d": "", "t": "植村秀眉笔"}, {"s": "5 购物清单", "d": "", "t": "rc"}, {"s": "5 购物清单", "d": "", "t": "hourglass 提亮 creme"}, {"s": "5 购物清单", "d": "", "t": "尼龙单肩小方包"}, {"s": "5 购物清单", "d": "", "t": "zara 4592018 微喇九分裤 蓝色"}, {"s": "5 购物清单", "d": "", "t": "prada 杏仁叶保温杯"}, {"s": "5 购物清单", "d": "", "t": "pazzion 红色漆皮 37"}, {"s": "5 购物清单", "d": "", "t": "边夹"}, {"s": "5 购物清单", "d": "", "t": "瑜伽垫"}, {"s": "5 购物清单", "d": "", "t": "颈椎枕"}, {"s": "5 购物清单", "d": "", "t": "生发精华 the ordinary  多重胜肽"}, {"s": "5 购物清单", "d": "", "t": "生发精华 馥绿德雅 三相精华"}, {"s": "5 礼物灵感", "d": "", "t": "阿吉豆发夹发圈"}, {"s": "5 礼物灵感", "d": "", "t": "怡式"}, {"s": "5 礼物灵感", "d": "", "t": "jellycat"}, {"s": "5 礼物灵感", "d": "", "t": "泡泡玛特"}, {"s": "5 礼物灵感", "d": "", "t": "巧克力"}, {"s": "5 礼物灵感", "d": "", "t": "bkt坐垫"}, {"s": "5 礼物灵感", "d": "", "t": "氮化镓充电头"}, {"s": "5 礼物灵感", "d": "", "t": "嘉士利月饼"}, {"s": "5 二手品牌", "d": "", "t": "伊索"}, {"s": "5 二手品牌", "d": "", "t": "cos"}, {"s": "5 二手品牌", "d": "", "t": "brics"}, {"s": "5 送礼收礼", "d": "", "t": "日期 ｜ 朋友 ｜ 礼品"}, {"s": "5 送礼收礼", "d": "", "t": "2026/10/04 ｜ 赵雨芳 ｜ 怡式阿姆斯特丹护手霜"}, {"s": "5 送礼收礼", "d": "", "t": "2026/10/04 ｜ 王晓洋 ｜ 小米氮化镓六十多瓦三口充电器带线"}, {"s": "6 奶茶草稿本", "d": "", "t": "看《良辰美景》，三爷问顾今朝愿不愿意嫁给他。我在幻想自己是顾今朝，然后给三爷列举其中的缘由，告诉他我心里面所有的想法。我会先跟他说，因为三爷待我恩重如山，所以我才愿意将心中所有想法和盘托出，不…"}, {"s": "6 奶茶草稿本", "d": "", "t": "【2026/10/15】戒奶茶：本来不想试一点点的 A2 牛乳，一听就觉得乏味；太想喝就试了，结果还不如用东方树叶兑牛奶（至少不苦，这个茶还是苦的）。想用「包装奶茶都不好喝、没什么味道」给自己…"}, {"s": "7 小说", "d": "", "t": "污黑"}, {"s": "7 小说", "d": "", "t": "结与劫"}, {"s": "7 小说", "d": "", "t": "疯子"}, {"s": "7 小说", "d": "", "t": "怪物"}, {"s": "7 小说", "d": "", "t": "提灯看刺刀"}, {"s": "7 小说", "d": "", "t": "铜雀锁金钗"}, {"s": "7 小说", "d": "", "t": "信息素骗局"}, {"s": "7 小说", "d": "", "t": "失踪"}, {"s": "7 小说", "d": "", "t": "被软禁的红"}, {"s": "7 小说", "d": "", "t": "独家占有"}, {"s": "7 小说", "d": "", "t": "灵魂缓刑"}, {"s": "7 小说", "d": "", "t": "暗河长明"}, {"s": "7 小说", "d": "", "t": "一屋暗灯"}, {"s": "7 小说", "d": "", "t": "重生之沧蓝"}, {"s": "7 小说", "d": "", "t": "总裁在上"}, {"s": "7 小说", "d": "", "t": "未见天明"}, {"s": "7 小说", "d": "", "t": "我把竹马ntr了"}, {"s": "7 小说", "d": "", "t": "绿茶婊"}, {"s": "7 小说", "d": "", "t": "恶性依赖"}, {"s": "7 小说", "d": "", "t": "一个自甘堕落的beta"}, {"s": "7 小说", "d": "", "t": "一个声名狼藉的beita"}, {"s": "7 小说", "d": "", "t": "不死者"}, {"s": "7 小说", "d": "", "t": "出轨"}, {"s": "7 小说", "d": "", "t": "炮灰beta他装不下去了"}, {"s": "7 小说", "d": "", "t": "夜泉"}, {"s": "7 小说", "d": "", "t": "逆水横刀"}, {"s": "7 小说", "d": "", "t": "光斑"}, {"s": "7 小说", "d": "", "t": "金丝雀能有什么坏心思呢"}, {"s": "7 小说", "d": "", "t": "beta"}, {"s": "7 小说", "d": "", "t": "不要跟陌生人谈恋爱"}, {"s": "7 小说", "d": "", "t": "不忠"}, {"s": "7 小说", "d": "", "t": "虚情假意"}, {"s": "7 小说", "d": "", "t": "我与变态斗智斗勇的故事"}, {"s": "7 小说", "d": "", "t": "关于我总是梦见粘人男友是冷酷渣男这件事"}, {"s": "7 小说", "d": "", "t": "吊桥效应观察记录"}, {"s": "7 小说", "d": "", "t": "顽石"}, {"s": "7 小说", "d": "", "t": "还春"}, {"s": "7 小说", "d": "", "t": "信息素紊乱综合征"}, {"s": "7 小说", "d": "", "t": "怀火"}, {"s": "7 小说", "d": "", "t": "猎狮"}, {"s": "7 小说", "d": "", "t": "听说你只把我当朋友"}, {"s": "7 小说", "d": "", "t": "和alpha前男友闪婚离不掉了"}, {"s": "7 小说", "d": "", "t": "漂亮皮囊"}, {"s": "7 小说", "d": "", "t": "十大酷刑"}, {"s": "7 小说", "d": "", "t": "一阙晴空"}, {"s": "7 小说", "d": "", "t": "限时狩猎"}, {"s": "7 小说", "d": "", "t": "不想了"}, {"s": "7 小说", "d": "", "t": "飞鸥不下"}, {"s": "7 小说", "d": "", "t": "镇上有谣言"}, {"s": "7 小说", "d": "", "t": "出租房的日记本"}, {"s": "7 小说", "d": "", "t": "强制占有"}, {"s": "7 小说", "d": "", "t": "‌完全压制"}, {"s": "7 小说", "d": "", "t": "独家情人"}, {"s": "7 小说", "d": "", "t": "如狼"}, {"s": "7 小说", "d": "", "t": "‌被金主抛弃后我又勾搭上了他发小"}, {"s": "7 小说", "d": "", "t": "万千宠爱"}, {"s": "7 小说", "d": "", "t": "‌潮深不渝"}, {"s": "7 小说", "d": "", "t": "‌毒性"}, {"s": "7 小说", "d": "", "t": "‌凶徒"}, {"s": "7 小说", "d": "", "t": "‌治愈偏执的他"}, {"s": "7 小说", "d": "", "t": "‌强制占有"}, {"s": "7 小说", "d": "", "t": "‌重度迷恋"}, {"s": "7 小说", "d": "", "t": "顶级暴徒"}, {"s": "7 小说", "d": "", "t": "坏纸鸢"}, {"s": "7 小说", "d": "", "t": "透骨香"}, {"s": "7 小说", "d": "", "t": "田菜菜封霄"}, {"s": "7 小说", "d": "", "t": "贺霆舟 穗穗平安"}, {"s": "7 小说", "d": "", "t": "凶神不煞"}, {"s": "7 小说", "d": "", "t": "火葬场来的这么快"}, {"s": "7 小说", "d": "", "t": "大师兄他只想逃"}, {"s": "7 小说", "d": "", "t": "升棺见喜"}, {"s": "7 小说", "d": "", "t": "卿平洲纪"}, {"s": "7 小说", "d": "", "t": "重生之自卑炮灰受"}, {"s": "7 小说", "d": "", "t": "abo"}, {"s": "7 小说", "d": "", "t": "之末世强占"}, {"s": "7 小说", "d": "", "t": "怀娇"}, {"s": "7 小说", "d": "", "t": "愚蠢的有钱人"}, {"s": "7 小说", "d": "", "t": "被嫌弃的张锐"}, {"s": "7 小说", "d": "", "t": ""}, {"s": "7 小说", "d": "", "t": "凶神不煞"}, {"s": "7 小说", "d": "", "t": "大师兄只想逃"}, {"s": "7 小说", "d": "", "t": ""}, {"s": "7 小说", "d": "", "t": "当白月光哪有不疯的"}, {"s": "7 小说", "d": "", "t": ""}, {"s": "7 小说", "d": "", "t": "被冒充的丈夫"}, {"s": "7 小说", "d": "", "t": "撞邪"}, {"s": "7 小说", "d": "", "t": "腌臜"}, {"s": "7 小说", "d": "", "t": "剑名不奈何"}, {"s": "7 动漫", "d": "", "t": "魔鬼恋人"}, {"s": "7 动漫", "d": "", "t": "戏剧性谋杀"}, {"s": "7 动漫", "d": "", "t": "一拳超人"}, {"s": "7 动漫", "d": "", "t": "犬夜叉"}, {"s": "7 动漫", "d": "", "t": "成龙历险记"}, {"s": "7 动漫", "d": "", "t": "火影忍者"}, {"s": "7 剧", "d": "", "t": "苍兰诀"}, {"s": "7 剧", "d": "", "t": "扶摇"}, {"s": "7 剧", "d": "", "t": "不期而至"}, {"s": "7 剧", "d": "", "t": "阳光之下"}, {"s": "7 剧", "d": "", "t": "情定大饭店"}, {"s": "7 剧", "d": "", "t": "锦绣芳华"}, {"s": "7 剧", "d": "", "t": "媚者无疆"}, {"s": "7 剧", "d": "", "t": "何以笙箫默"}, {"s": "7 剧", "d": "", "t": "小女花不弃"}, {"s": "7 剧", "d": "", "t": "上瘾"}, {"s": "7 剧", "d": "", "t": "逆袭的第二名"}, {"s": "7 剧", "d": "", "t": "香蜜"}, {"s": "7 剧", "d": "", "t": "对抗路cp"}, {"s": "7 剧", "d": "", "t": "白发"}, {"s": "7 剧", "d": "", "t": "庆余年"}, {"s": "7 剧", "d": "", "t": "莲花楼"}, {"s": "7 剧", "d": "", "t": ""}, {"s": "7 剧", "d": "", "t": "汉尼拔"}, {"s": "7 剧", "d": "", "t": "吸血鬼日记"}, {"s": "7 剧", "d": "", "t": "邪恶力量"}, {"s": "7 剧", "d": "", "t": "第五季第三集，sam退出猎魔，1.两人同步生活场景 羁绊感太强了。天使又突然出现在deam身后，天天吓dean"}, {"s": "7 剧", "d": "", "t": "楚乔传"}, {"s": "7 剧", "d": "", "t": "玫瑰的故事"}, {"s": "7 漫画", "d": "", "t": "爱犬与我"}, {"s": "7 漫画", "d": "", "t": "罪域纹身"}, {"s": "7 漫画", "d": "", "t": "九柱神"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "日期 ｜ 时间 ｜ 出发点"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/01 ｜ 早上 ｜ 禄口机场"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/01 ｜ 中午 ｜ 关西国际机场"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/01 ｜ 下午 ｜ 酒店"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/01 ｜ 晚上 ｜ 商场"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/02 ｜ 早上 ｜ 酒店"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/02 ｜ 晚上 ｜ 环球影城"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/02 ｜ 晚上 ｜ 大阪"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/03 ｜ 早上 ｜ 酒店"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/03 ｜ 鸭川 ｜ 清水寺"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/03 ｜ 清水寺 ｜ 伏见稻荷"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/03 ｜ 晚上 ｜ 伏见稻荷"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/04 ｜ 早上 ｜ 京都"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/04 ｜ 中午 ｜ 酒店"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/04 ｜ 晚上 ｜ 银座"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/05 ｜ 早上 ｜ 酒店"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/05 ｜ 迪士尼 ｜ 酒店前台"}, {"s": "档·旅游 2025-10日本", "d": "", "t": "2025/10/05 ｜ 晚上 ｜ 东京机场"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "日期 ｜ 时间 ｜ 出发点"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/01 ｜ 早上 ｜ 禄口机场"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/01 ｜ 中午 ｜ 东京机场"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/01 ｜ 下午 ｜ 东京酒店"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/01 ｜ 晚上 ｜ 银座 美妆护肤品 中古店 美食"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/02 ｜ 早上 ｜ 东京酒店"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/02 ｜ 晚上 ｜ 东京迪士尼"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/03 ｜ 早上 ｜ 京都酒店"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/03 ｜ 晚上 ｜ 鸭川 寺庙 伏见稻荷"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/04 ｜ 早上 ｜ 京都酒店"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/04 ｜ 中午 ｜ 大阪酒店"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/04 ｜ 晚上 ｜ 心斋桥"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/05 ｜ 早上 ｜ 大阪酒店"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "2025/10/05 ｜ 晚上 ｜ 关西机场"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "口香糖 ｜ 南禅寺"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "戒指项链耳环 ｜ 叡山电车"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "香水 ｜ 大阪必去 ｜ 商场"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "包包 ｜ 关西机场 ｜ 购物提前预约"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "小风扇 ｜ 生驹"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "转换头 ｜ 临空城海滩"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "sennan long park"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "大阪海游馆"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "通天阁"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "阿倍野展望台"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "神户缆车"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "整体要出片 ｜ 泳衣"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "帽子"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "紧身上衣"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "露背裙"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "发夹"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "墨镜"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "头戴耳机"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "凉鞋"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "碎花裙"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "卡地亚手镯耳环戒指"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "克罗心"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "玛瑙镯"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "伞"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "防晒分装瓶"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "耳机"}, {"s": "档·旅游 2025-10日本东进阪出", "d": "", "t": "大疆哪儿买便宜"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "宁德 ｜ 四礵列岛"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "5.4 ｜ 泉州 ｜ 西街后半段煎糕"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "5.5 ｜ 十里黄金海岸红塔湾旅游区 ｜ 秋千拍照"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "月亮湾沙滩 ｜ 牛肉火锅吃赖三牛肉，"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "德合咸饭"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "看海计划 ｜ 烤肉吃 漫火山葵"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "鼎香油条花生汤 晋江"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "橘若古渡码头小火车 ｜ 平啊面线糊 花生汤"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "林家柒号沙茶面"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "石狮洛伽寺 ｜ 六灌路 如如芒果糯米 大鱼松茸包 鸡排师傅蟹肉棒和鸡胗  beigo抹茶"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "晋江金沙湾 ｜ 痛风锅 海鲜粥底吃三角虎"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "巴浪鱼咖啡"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "落日归山海咖啡"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "水杉树下 ｜ 山景咖啡"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "梧林村落"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "六灌路美食街"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "油纸灯"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "侨民商品街"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "晋江安踏工厂店"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "晋江五里工厂店 安踏"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "安踏五里工业区店"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "安踏池店"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "和平广场 ｜ 买鞋"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "巷鲤旧物"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "岳庙 ｜ 灯笼文创"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "闽台缘博物馆 ｜ 文创"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "记得三个人提前约顺风车，比买高铁票便宜，要买高铁票的话要每天都提前看下"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "5.6 ｜ 福州 ｜ 口口香脆鱼"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "三坊七巷"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "达明美食街"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "5.7早上 ｜ 升旗 ｜ 升旗"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "福州国家森林公园"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "雨田玉器博物馆"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "福建博物院"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "烟台山 拍照 ｜ 福屿捞化"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "海螺塔 ｜ 巴香鱼庄"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "烟台山日落 ｜ 朱富贵"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "鼓山落日缆车 时间不一定好把握 ｜ 寄海"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "雨田古代玉器博物馆 ｜ 冰箱贴 ｜ 茯苓膏"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "大姆山 ｜ 太远了走回头路了"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "南平 ｜ 武夷山"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "梯田"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "日出"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "白云禅寺"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "邵武古城 ｜ 拍照"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "建瓯魏姐锅巴  真的好吃"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "陋室饮茶室"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "漳州 ｜ 漳州古城小吃"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "南碇岛火山"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "火山岛"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "千岛湖"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "厦门 ｜ 鼓浪屿管风琴演奏"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "南普陀寺"}, {"s": "档·旅游 2026-05福建", "d": "", "t": "集美学村"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day1 ｜ 2026.6.6 ｜ 星期六"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day2 ｜ 2026.6.7 ｜ 星期日"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day3 ｜ 2026.6.8 ｜ 星期一"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day4 ｜ 2026.6.9 ｜ 星期二"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day5 ｜ 2026.6.10 ｜ 星期三"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day6 ｜ 2026.6.11 ｜ 星期四"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day7 ｜ 2026.6.12 ｜ 星期五"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day8 ｜ 2026.6.13 ｜ 星期六"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "Day9 ｜ 2026.6.14 ｜ 星期日"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "南京"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "单人"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "时间 ｜ 总金额 ｜ 去哪儿 吉祥"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "南京-广州 ｜ 520 ｜ 520"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "东航 600 ｜ 南京-深圳 ｜ 600"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "2h ｜ 深圳-香港酒店 ｜ 108"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港-澳门 ｜ 166 ｜ 166"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "2h ｜ 苏南瑞丽DR6564 444 ｜ 珠海-昆明"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "昆明-南京 ｜ 650 ｜ 650"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "类型 ｜ 描述 ｜ RMB"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-顺风车 ｜ 家-南京机场 ｜ 38"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-机票 ｜ 南京-深圳 ｜ 1240"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-打车 ｜ 换钱招商银行-福田火车站 ｜ 12.5"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-高铁 ｜ 深圳-香港 ｜ 156"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "电话卡和流量 ｜ 屈臣氏/澳门流量包 ｜ 85"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "吃饭 ｜ 元朗冰室 猪扒饭 ｜ 64"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "酒店 ｜ 香港酒店 第二十一/英 ｜ 1877.23"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "酒店 ｜ 押金 ｜ 驾照，研究了一下 发现从预约到办完要一个月+，后面要办的时候 直接找咸鱼 办完寄过来就行了"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "吃饭 ｜ 食神 ｜ 30"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 堂吉柯德指甲油 锅巴 ｜ 58"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-公交地铁 ｜ 公交地铁 ｜ 610.92"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 三双鞋 ｜ 771.42"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ muji连衣裙，水杯 ｜ 109"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 2nd ｜ 78.7"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ daiso Aeon ｜ 20.82"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 星巴克 ｜ 110"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 迪士尼 ｜ 554.32"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 耳环 ｜ 52"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "吃饭 ｜ 吃饭 ｜ 786.9"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "必喝奶茶 太兴和敏华  ｜ 朗豪坊附近吃饭选择多"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "给哥哥嫂子带礼物 ｜ gu 朗豪电梯，万宁  muji: 15元带杯水，限定茶味巧克力，红色保温杯 黑地"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-打车 ｜ 酒吧打车 ｜ 70"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "给杰西带结婚礼物 ｜ K11美丽商场+天台"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "手工艺品纪念品 ｜ 落日天星小轮+摩天轮"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "酒店 ｜ 香港酒店 帝苑/便宜的？ ｜ 1646.59"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ sasa ｜ 61.03"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ cosme ｜ 57.13"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ muji ｜ 12.12"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "门票 ｜ 摩天轮 ｜ 35"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "门票 ｜ 体重 ｜ 10"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 围巾sogo ｜ 86"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 宜家 ｜ 101.7"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ nike ｜ 935"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ camel保温杯 ｜ 93.56"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ muji折扣小黑包，本子 ｜ 48.6"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ bbw洗手液 ｜ 48.48"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港赛马 ｜ 港迪周大福"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "m+博物馆 ｜ 烤鱿鱼"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "昂坪360度缆车 ｜ 检票入园后，在小火车下方的桥洞，有工作人员发放。(我是在右侧入园的，在右侧桥洞领取，不知道左侧有没有"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港落日飞车 ｜ 弹簧狗杯子杯套"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "法院旁听 ｜ +59换购轻盈被 ｜ 机场才有"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港剧院 ｜ 鸡肉卷性价比最高"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "叮叮车+太平山缆车+卢吉道观维港 ｜ 三餐套票"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 药 ｜ 105"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "旺角朗豪坊电梯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "坚尼地城篮球场"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "湾仔临时海滨公园"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "海港城海景楼梯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "讯号山公园楼梯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "K11天台 ｜ 倒闭大创旁边有个争鲜，卖饮料超便宜，还有连锁店吗"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港西贡快艇 ｜ 周三 ｜ cpb 算了"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ cotton on ｜ 103.88"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "周三教堂音乐会 ｜ 去711买水换零钱，要有2个5r ｜ 保温杯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "门票 ｜ 维港夜景游船 天星小轮4元，tvb体重秤，摩天轮 ｜ 10"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "门票 ｜ 香港迪士尼 ｜ 940"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-高铁 ｜ 横琴口岸-珠海机场 ｜ 34"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-船票 ｜ 香港-澳门 ｜ 420"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "酒店 ｜ 澳门酒店 ｜ 2406.58"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "澳门纪念品"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-机票 ｜ 珠海-昆明 ｜ 1059"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "酒店 ｜ 昆明酒店 ｜ 287"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 昆明南博会 ｜ 303"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-机票 ｜ 昆明-南京 ｜ 1340"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-顺风车 ｜ 昆明酒店到机场 ｜ 42"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "两人9天8夜 ｜ 16910.48 ｜ 去711买水换零钱"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "一人 ｜ 8455.24 ｜ 中环二手店群，二手店都贵 算了，tvb体重秤"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "中环toptown 5:00-8:00pm"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "周三跑马场晚6-10:30"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "小马挂件"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "6x观光中环，豪宅，46分钟单程，再往回坐"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "富华早餐"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "类型 ｜ 金额 ｜ 周四早上"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "酒店 ｜ 6217.4"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "购物 ｜ 3709.76"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-机票 ｜ 3639 ｜ 10"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "门票 ｜ 995 ｜ 铜锣湾silk，吃茶千味"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "吃饭 ｜ 880.9 ｜ 11"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-船票 ｜ 420 ｜ 10"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-高铁 ｜ 190 ｜ 9"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "电话卡和流量 ｜ 85"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-打车 ｜ 82.5"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-顺风车 ｜ 80"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "交通-公交地铁 ｜ 610.92"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "12点 ｜ 西湾河宜家"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "合计 ｜ 16910.48 ｜ 12"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "check ｜ 0 ｜ 12"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "11 ｜ 然后考虑下那个耐克蓝要不要"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "去湾仔码头到尖沙咀？"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "剪发广东道1096"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "吃茶三千，不顺路就进朗豪坊"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "煲仔饭"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "榴莲"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "朗豪坊通天电梯上8楼，丝茶，7 muji打折角，ot，3 it"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "朗豪坊附近gu 棕丝绒芭蕾鞋"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "朗豪坊bbw"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "沙田一田骆驼"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "k11 meusa，吃茶三千"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "东荟城有什么优惠，水壶200？nb，ascis，lulu"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "轮渡回酒店拿行李去中环"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "11点开门 ｜ muji皇室堡 忍者鞋，凉鞋，5s 6s磨脚会不一样"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "中环greenprice 临走前买点零食"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "中环wedgwood"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "晕船药"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "周五 ｜ 京东退款申请 绒么么裤子和滤镜"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "闲鱼买船票"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "码头手机卡-直接买流量包了"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "酒店早餐8:30-10：00"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "柠檬茶"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "跟小红书攻略游"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "大鸡柳"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "美高梅小狮子"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "告诉酒店来打扫"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "赌场小食"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "玫瑰果酱"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "给果果带澳门钜记猪肉脯，我们当时去的那家是最贵的 散装的，果果想要整的。"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "跟酒店说一下，接送选择送我们去珠海金湾机场，看看最远能送到哪里。威尼斯人正门，去横琴坐免费发财车"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "卓丽内衣百货，诚信出口时装 大三巴"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "慈善二手"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "银河酒店天浪淘园沙滩"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "泳衣"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "约昆明机场到酒店的顺风车"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "订昆明酒店"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "周六 ｜ 早上续一下流量包"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "游泳"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "美高梅展"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "榴莲 义字街"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "bloom camel"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "muji打折角，芭蕾鞋，忍者鞋和凉鞋不上档次，冷静点"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "巴黎人等丑鱼购物袋"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "威尼斯人bbw"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "dfs玩具折扣"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香烟"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "cpb"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "cdf无门槛200元券还有吗"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "威尼斯人安德鲁饼店"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "威尼斯人维密，泳衣可能有三折"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "金沙保温杯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "给果果带澳门钜记猪肉脯，我们当时去的那家是最贵的 散装的，果果想要整的。"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "撒隆巴斯，保心安油，虎牌膏药"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "约禄口机场到家的顺风车"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "周日"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "京东滤镜"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "小红书两家衣服"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "必喝奶茶 太兴和敏华"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "给哥哥嫂子带礼物"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "给杰西带结婚礼物"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "手工艺品纪念品"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港赛马"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "m+博物馆"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "昂坪360度缆车"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港落日飞车"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "法院旁听"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港剧院"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "叮叮车+太平山缆车+卢吉道观维港"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "旺角朗豪坊电梯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "坚尼地城篮球场"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "湾仔临时海滨公园"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "海港城海景楼梯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "讯号山公园楼梯"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "K11天台"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "香港西贡快艇"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "周三教堂音乐会"}, {"s": "档·旅游 2026-06昆明广港澳", "d": "", "t": "澳门纪念品"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "9.25 ｜ 雅居乐国际广场"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "9.26 ｜ 雅居乐国际广场"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "9.27 ｜ 拍个证件照 ｜ 一人"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "1020 ｜ 2120"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "地址 ｜ 品牌 ｜ 类型"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "虹桥天地 演艺中心 ｜ 二手 ｜ 高铁回程"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "多抓鱼 ｜ 二手 ｜ 酒店两晚"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "只二透明仓 ｜ 二手 ｜ 吃饭"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "善淘 慈善超市 ｜ 二手 ｜ 打车"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "沐恩堂 ｜ 景点"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "徐家汇书院 ｜ 景点"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "new balance"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "静安moho 一楼bearkon ｜ sam edelman ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "静安苏河湾万象天地东里B1 ｜ sam edelman ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "snidel ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "sandro ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "maje ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "maxmara ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "欧时力 ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "鬼冢虎 ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "niko and ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "jason wu ｜ 快闪"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "brandy melville ｜ 快时尚"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "one moment ｜ 快时尚"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "mangoway ｜ 快时尚"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "wm ｜ 快时尚"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "musinsa standard ｜ 快时尚"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "ofakiva ｜ 快时尚"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "20261008 ｜ 国庆后九寨沟"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "10.4号开始上海飞土耳其单程一直要3千多，单程11小时"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "10.3号开始上海飞格鲁吉亚2000多单程，17个小时"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "九寨沟巅峰期是在10月底到11月，这次估计玩不到"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "果果说国庆去九寨沟最合适"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "三人合计 ｜ 8642.5"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "一人合计 ｜ 2880.83333333333"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "飞机 ｜ 550"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "高铁 ｜ 140"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "观光车和门票 ｜ 490"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "门票 第二天 ｜ 490"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "吃饭 ｜ 154.166666666667"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "飞机回程 ｜ 550"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "高铁回程 ｜ 140"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "住宿 ｜ 366.666666666667"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "20261008 ｜ 广州"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "服装鞋子批发 ｜ 2-3天"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "白云皮具城 ｜ 1天"}, {"s": "档·旅游 2026-09上海九寨沟广州", "d": "", "t": "快闪"}, {"s": "档·旅游 潮汕", "d": "", "t": "去机场顺风车"}, {"s": "档·旅游 潮汕", "d": "", "t": "贝塔付的 ｜ 杰西付的 ｜ 合计"}, {"s": "档·旅游 潮汕", "d": "", "t": "打车去饶平肖米 ｜ 42.5 ｜ 42.5"}, {"s": "档·旅游 潮汕", "d": "", "t": "饶平肖米 ｜ 33 ｜ 33"}, {"s": "档·旅游 潮汕", "d": "", "t": "打车去美食街 ｜ 9.1 ｜ 9.1"}, {"s": "档·旅游 潮汕", "d": "", "t": "水果 ｜ 30 ｜ 30"}, {"s": "档·旅游 潮汕", "d": "", "t": "打车去牛肉火锅 ｜ 14 ｜ 14"}, {"s": "档·旅游 潮汕", "d": "", "t": "打车回酒店 ｜ 44 ｜ 44"}, {"s": "档·旅游 潮汕", "d": "", "t": "云南白药 ｜ 56 ｜ 56"}, {"s": "档·旅游 潮汕", "d": "", "t": "冰袋 ｜ 9.8 ｜ 9.8"}, {"s": "档·旅游 潮汕", "d": "", "t": "冰袋 ｜ 33 ｜ 33"}, {"s": "档·旅游 潮汕", "d": "", "t": "208.4 ｜ 63 ｜ 271.4"}, {"s": "档·旅游 潮汕", "d": "", "t": "135.7"}, {"s": "档·旅游 潮汕", "d": "", "t": "杨桃黄皮冰茶 ｜ 19 ｜ 29.7"}, {"s": "档·旅游 潮汕", "d": "", "t": "肠粉 ｜ 24"}, {"s": "档·旅游 潮汕", "d": "", "t": "一杯潮茶 抹茶 ｜ 19"}, {"s": "档·旅游 潮汕", "d": "", "t": "天环 ｜ zara ｜ B1"}, {"s": "档·旅游 潮汕", "d": "", "t": "hm ｜ B1"}, {"s": "档·旅游 潮汕", "d": "", "t": "周大福金融中心 ｜ 内购会 ｜ 2f"}, {"s": "档·旅游 潮汕", "d": "", "t": "白云皮具城一期 ｜ 巴黎世家包 ｜ 3f"}, {"s": "档·旅游 潮汕", "d": "", "t": "金控大厦 ｜ ur ｜ 2楼"}, {"s": "档·旅游 潮汕", "d": "", "t": "apm ｜ 十三行 ｜ 不推荐"}, {"s": "档·旅游 适宜月份", "d": "", "t": "2026 ｜ 5.4-5.9 ｜ 福建"}, {"s": "档·旅游 适宜月份", "d": "", "t": "6月 ｜ 广西"}, {"s": "档·旅游 适宜月份", "d": "", "t": "7-8月 ｜ 新疆 ｜ 云南"}, {"s": "档·旅游 适宜月份", "d": "", "t": "10月 ｜ 广西"}, {"s": "档·旅游 高加索", "d": "", "t": "总体劣势 ｜ 食物吃不惯"}, {"s": "档·旅游 高加索", "d": "", "t": "阿塞拜疆"}, {"s": "档·旅游 高加索", "d": "", "t": "格鲁吉亚"}, {"s": "档·旅游 高加索", "d": "", "t": "亚美尼亚"}], "novels": [{"n": "污黑", "a": "黑色禁药", "sc": "6", "desc": "各界领袖，主攻最强", "tags": ["他逃他追", "致残", "长期强制欺压", "尽力对抗还是计谋/武力敌不过"], "nt": 6}, {"n": "结与劫", "a": "", "sc": "3", "desc": "各界领袖，主攻宇宙最强", "tags": ["对受有执念", "完全不近其他异性", "攻地位崇高实力强大"], "nt": 3}, {"n": "疯子", "a": "小妖子", "sc": "3", "desc": "“兔”", "tags": ["对受有执念", "小黑屋", "致残"], "nt": 3}, {"n": "怪物", "a": "", "sc": "2", "desc": "自己养大的生物", "tags": ["对受有执念", "完全不近其他异性"], "nt": 2}, {"n": "提灯看刺刀", "a": "", "sc": "5", "desc": "受忍辱负重报仇", "tags": ["对受有执念", "长期强制欺压", "尽力对抗还是计谋/武力敌不过", "攻地位崇高实力强大"], "nt": 5}, {"n": "铜雀锁金钗", "a": "", "sc": "3", "desc": "", "tags": ["对受有执念", "长期强制欺压", "受思维很像我 冷静强大坚韧"], "nt": 3}, {"n": "信息素骗局", "a": "", "sc": "5", "desc": "", "tags": ["对受有执念", "他逃他追", "生理极限", "攻地位崇高实力强大"], "nt": 5}, {"n": "失踪", "a": "", "sc": "2", "desc": "好不容易逃跑潜藏多年还是被抓回去", "tags": ["他逃他追", "长期强制欺压"], "nt": 2}, {"n": "被软禁的红", "a": "", "sc": "2", "desc": "面对权钱滔天的攻敢怒不敢言，伏低做小寻找机会反咬", "tags": ["长期强制欺压", "受思维很像我 冷静强大坚韧"], "nt": 2}, {"n": "独家占有", "a": "", "sc": "4", "desc": "温柔贵公子攻迫不得已性侵女主，后期发狂想把女主囚禁", "tags": ["对受有执念", "完全不近其他异性", "攻地位崇高实力强大", "受思维很像我 冷静强大坚韧"], "nt": 4}, {"n": "灵魂缓刑", "a": "", "sc": "5", "desc": "在杀手面前假装植物人哈哈哈", "tags": ["完全不近其他异性", "他逃他追", "生理极限", "受思维很像我 冷静强大坚韧"], "nt": 5}, {"n": "暗河长明", "a": "", "sc": "1", "desc": "受一生坎坷，失去了爱他的人", "tags": ["长期强制欺压"], "nt": 1}, {"n": "一屋暗灯", "a": "", "sc": "1", "desc": "兄弟骨科年下", "tags": ["对受很凶"], "nt": 1}, {"n": "重生之沧蓝", "a": "", "sc": "3", "desc": "一直被欺压", "tags": ["生理极限", "对受很凶", "长期强制欺压"], "nt": 3}, {"n": "总裁在上", "a": "", "sc": "4", "desc": "女主没人爱，终于被救赎", "tags": ["对受有执念", "长期强制欺压", "攻地位崇高实力强大", "受思维很像我 冷静强大坚韧"], "nt": 4}, {"n": "未见天明", "a": "", "sc": "3", "desc": "受强大有家人，却被没人爱的疯狗盯上", "tags": ["对受有执念", "长期强制欺压", "受思维很像我 冷静强大坚韧"], "nt": 3}, {"n": "我把竹马ntr了", "a": "", "sc": "1", "desc": "np", "tags": ["小黑屋"], "nt": 1}, {"n": "绿茶婊", "a": "", "sc": "1", "desc": "np", "tags": ["受很狗很搞笑"], "nt": 1}, {"n": "恶性依赖", "a": "", "sc": "1", "desc": "受穷苦底层人没人爱，但心存善良博爱，最终被救赎", "tags": ["完全不近其他异性"], "nt": 1}, {"n": "一个自甘堕落的beta", "a": "", "sc": "2", "desc": "受从小不如弟弟，没人爱，很自卑，最终被救赎", "tags": ["对受有执念", "完全不近其他异性"], "nt": 2}, {"n": "一个声名狼藉的beita", "a": "", "sc": "3", "desc": "受又强又拽，敢于反抗，只是真的搞不过攻", "tags": ["他逃他追", "攻地位崇高实力强大", "受思维很像我 冷静强大坚韧"], "nt": 3}, {"n": "不死者", "a": "", "sc": "1", "desc": "攻又强大又温暖包容", "tags": ["受思维很像我 冷静强大坚韧"], "nt": 1}, {"n": "出轨", "a": "", "sc": "3", "desc": "只针对受的sm", "tags": ["对受有执念", "对受很凶", "长期强制欺压"], "nt": 3}, {"n": "炮灰beta他装不下去了", "a": "", "sc": "", "desc": "本来期望很低，却成为了大佬的人", "tags": [], "nt": 0}, {"n": "夜泉", "a": "", "sc": "4", "desc": "受善良真诚坚强，一开始叙诡假装是替身，后来才发现他比其他人要强太多", "tags": ["对受很凶", "长期强制欺压", "攻地位崇高实力强大", "受思维很像我 冷静强大坚韧"], "nt": 4}, {"n": "逆水横刀", "a": "", "sc": "", "desc": "强强相遇，致残才能使其中一方低头", "tags": [], "nt": 0}, {"n": "光斑", "a": "", "sc": "3", "desc": "冷血精神残疾少爷狠狠欺负黑皮哑巴受，精神病疯子攻", "tags": ["对受有执念", "对受很凶", "长期强制欺压"], "nt": 3}, {"n": "金丝雀能有什么坏心思呢", "a": "", "sc": "", "desc": "", "tags": ["对受有执念", "攻有偏执/反社会/冷漠/暴力病态人格", "监视控制", "受S攻"], "nt": 7}, {"n": "beta", "a": "恶意如梦", "sc": "", "desc": "", "tags": ["对受有执念", "攻有偏执/反社会/冷漠/暴力病态人格", "完全不近其他异性", "攻地位崇高实力强大"], "nt": 6}, {"n": "不要跟陌生人谈恋爱", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "不忠", "a": "狄罪山", "sc": "", "desc": "", "tags": ["对受有执念", "攻有偏执/反社会/冷漠/暴力病态人格", "长期强制欺压", "尽力对抗还是计谋/武力敌不过"], "nt": 5}, {"n": "虚情假意", "a": "", "sc": "", "desc": "", "tags": ["对受有执念", "完全不近其他异性"], "nt": 2}, {"n": "我与变态斗智斗勇的故事", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "关于我总是梦见粘人男友是冷酷渣男这件事", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "吊桥效应观察记录", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "顽石", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "还春", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "信息素紊乱综合征", "a": "", "sc": "", "desc": "", "tags": ["受思维很像我 冷静强大坚韧"], "nt": 1}, {"n": "怀火", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "猎狮", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "听说你只把我当朋友", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "和alpha前男友闪婚离不掉了", "a": "", "sc": "", "desc": "", "tags": ["攻地位崇高实力强大"], "nt": 1}, {"n": "漂亮皮囊", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "十大酷刑", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "一阙晴空", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "限时狩猎", "a": "", "sc": "", "desc": "特种兵忠犬攻，犯罪心理学家强受，timeloop", "tags": ["攻地位崇高实力强大", "受思维很像我 冷静强大坚韧"], "nt": 2}, {"n": "不想了", "a": "花卷", "sc": "", "desc": "疯批忠犬年下攻，强制sex，拉扯了很多次才真的sex，qj的恐惧感很足", "tags": ["攻让人恐惧"], "nt": 1}, {"n": "飞鸥不下", "a": "", "sc": "", "desc": "高冷抖s暴力癖攻 让人很有征服欲 受看似死皮赖脸 其实是个偏执狂疯批 想法和我很像", "tags": [], "nt": 0}, {"n": "镇上有谣言", "a": "", "sc": "", "desc": "底层攻。。。 受挺硬气", "tags": [], "nt": 0}, {"n": "出租房的日记本", "a": "", "sc": "", "desc": "跟踪偷窥狂，男神精神病攻", "tags": [], "nt": 0}, {"n": "强制占有", "a": "加菲尔德", "sc": "", "desc": "又爹又哥养成攻", "tags": [], "nt": 0}, {"n": "‌完全压制", "a": "朕叫夏目叫夏目", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "独家情人", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "如狼", "a": "万灭之殇", "sc": "", "desc": "np强制爱 大叔受 去美国工作", "tags": [], "nt": 0}, {"n": "‌被金主抛弃后我又勾搭上了他发小", "a": "", "sc": "", "desc": "很渣很直白的第一人称描写", "tags": [], "nt": 0}, {"n": "万千宠爱", "a": "", "sc": "", "desc": "百变攻", "tags": ["攻让人恐惧"], "nt": 1}, {"n": "‌潮深不渝", "a": "", "sc": "", "desc": "隐忍强受 有受苦受辱 思维方式跟我很吻合 攻有点菜", "tags": [], "nt": 0}, {"n": "‌毒性", "a": "", "sc": "", "desc": "跟踪狂优秀攻", "tags": [], "nt": 0}, {"n": "‌凶徒", "a": "", "sc": "", "desc": "跟踪狂壮实攻", "tags": [], "nt": 0}, {"n": "‌治愈偏执的他", "a": "", "sc": "", "desc": "bg 女孩性格安静乖巧 聪明冷静 就是不算狠人，养了一条只属于她的狗", "tags": [], "nt": 0}, {"n": "‌强制占有", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "‌重度迷恋", "a": "", "sc": "", "desc": "腿控 直男受", "tags": [], "nt": 0}, {"n": "顶级暴徒", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "坏纸鸢", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "透骨香", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "田菜菜封霄", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "贺霆舟 穗穗平安", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "凶神不煞", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "火葬场来的这么快", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "大师兄他只想逃", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "升棺见喜", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "卿平洲纪", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "重生之自卑炮灰受", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "abo", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "之末世强占", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "怀娇", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "愚蠢的有钱人", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "被嫌弃的张锐", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "凶神不煞", "a": "", "sc": "", "desc": "鹿开 换门锁超搞笑", "tags": [], "nt": 0}, {"n": "大师兄只想逃", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "当白月光哪有不疯的", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "被冒充的丈夫", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}, {"n": "撞邪", "a": "", "sc": "", "desc": "太岁人外", "tags": [], "nt": 0}, {"n": "腌臜", "a": "", "sc": "", "desc": "万紫千红", "tags": [], "nt": 0}, {"n": "剑名不奈何", "a": "", "sc": "", "desc": "", "tags": [], "nt": 0}], "dramas": [{"n": "苍兰诀", "a": "王鹤棣", "desc": "强势"}, {"n": "扶摇", "a": "长孙无极", "desc": "一直在逗女主玩，陪女主成长"}, {"n": "不期而至", "a": "谭四条", "desc": "天天主动跑到女主家找女主"}, {"n": "阳光之下", "a": "封潇声", "desc": "强势，天天找女主"}, {"n": "情定大饭店", "a": "", "desc": "强势，一直追着女主不放"}, {"n": "锦绣芳华", "a": "前夫哥", "desc": "天天追着不放"}, {"n": "媚者无疆", "a": "公子", "desc": "天天追着不放 明显偏心女主"}, {"n": "何以笙箫默", "a": "", "desc": ""}, {"n": "小女花不弃", "a": "东方炻", "desc": ""}, {"n": "上瘾", "a": "顾海", "desc": "男主主动"}, {"n": "逆袭的第二名", "a": "1", "desc": "男主主动"}, {"n": "香蜜", "a": "小鱼", "desc": "偏执"}, {"n": "对抗路cp", "a": "", "desc": ""}, {"n": "白发", "a": "1v2", "desc": ""}, {"n": "庆余年", "a": "五竹机器人不知道停", "desc": ""}, {"n": "莲花楼", "a": "笛飞声", "desc": "武力值很高 话少 头脑简单的大狗"}, {"n": "", "a": "", "desc": ""}, {"n": "汉尼拔", "a": "汉尼拔", "desc": "daddy 唯一的daddy"}, {"n": "吸血鬼日记", "a": "stphan damon 以叔", "desc": "兄弟两都好帅 争夺elena太爽了"}, {"n": "邪恶力量", "a": "第四季21集sam戒断恶魔血后第一次吸", "desc": ""}, {"n": "", "a": "第五季第三集，sam退出猎魔，1.两人同步生活场…", "desc": ""}, {"n": "楚乔传", "a": "女主/窦骁/林更新", "desc": "名义大女主、女主本身很强，但仍要靠两个男主喜欢她来抬高身位——这类剧太多了"}, {"n": "玫瑰的故事", "a": "玫瑰", "desc": "以前觉得肤浅低俗，但玫瑰从头到尾没被谁好好爱过、最后什么幸福也没捞着、没能靠成男人——这反而是它相比其他剧的优点"}], "animes": [{"n": "魔鬼恋人", "a": ""}, {"n": "戏剧性谋杀", "a": ""}, {"n": "一拳超人", "a": ""}, {"n": "犬夜叉", "a": ""}, {"n": "成龙历险记", "a": ""}, {"n": "火影忍者", "a": "鸣佐"}], "thoughts": [], "recent_empty": "外出版不下发速记原文 · 这一块回家看", "tips": ["去医院做一次全面体检（含之前医生建议、因价格… 已经压了 11 天，是全表最老的一条", "欲望清单 23 项里有 13 项还没做功课（57%）", "账本还是 0 笔，支出/结余/冲动消费要等 G5 导账单才准"]};
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const K = D.kpi, T = D.totals;
+const NAV = [["", [["home", "首页"]]], ["记 录", [["all", "总清单"], ["todo", "待办"], ["wish", "欲望清单"]]], ["花 钱", [["shop", "购物指南"], ["money", "账本"]]], ["成 长", [["time", "时间台账"], ["research", "功课与研究"], ["know", "知识体系"]]]];
+const PUBLIC = true;
+const ICON = {home:'M3 10.5 12 3l9 7.5V21H3z',
+ all:'M4 6h16M4 12h16M4 18h10', todo:'M4 5h16v14H4zM8.5 12l2.5 3 4.5-6',
+ wish:'M5 8h14l-1.5 12h-11zM9 8V6a3 3 0 0 1 6 0v2',
+ shop:'M4 6h3l2 11h9l2-8H7', money:'M3 7h18v12H3zM3 11h18',
+ time:'M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17M12 7.5V12l3 2',
+ research:'M4 5h7v14H4zM13 5h7v14h-7z', know:'M6 4h12v16H6zM9 8h6M9 12h6'};
+const NAVNUM = {all:T.rows, todo:K.todo_open, wish:K.wish_total, know:T.know};
+
+$('#d-date').textContent = D.today + ' ' + D.weekday;
+$('#gen').textContent = '生成于 ' + D.generated_at;
+
+$('#nav').innerHTML = NAV.map(g =>
+  (g[0] ? '<div class="grp">'+g[0]+'</div>' : '') +
+  g[1].map(([k,n]) =>
+    '<a data-k="'+k+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="'+
+    (ICON[k]||'')+'"/></svg>'+n+(NAVNUM[k]!=null?'<em>'+NAVNUM[k]+'</em>':'')+'</a>').join('')).join('');
+
+let tid=null;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(tid);tid=setTimeout(()=>t.classList.remove('on'),2400);}
+
+/* ============ 首页 ============ */
+function viewHome(){
+  const plist = D.principles.map(p =>
+    '<div class="p-item"><i>'+p.no+'</i><div><span class="t">'+esc(p.t)+
+    (p.new?'<span class="np">新增 · 10/22</span>':'')+
+    (p.todo?'<span class="wt">原文只写了词 · 待你补一句</span>':'')+
+    '</span><span class="s">'+esc(p.s)+'</span></div></div>').join('');
+  const top5 = [100,78,56,34,18].map((w,i)=>
+    '<div class="t5"><i>'+(i+1)+'</i><span class="ph"></span><span class="bar"><s style="width:'+w+'%"></s></span><span class="tm">--</span></div>').join('');
+  const mods = D.modules.map(m =>
+    '<div class="mod'+(m.stage?' off':'')+'" data-k="'+m.key+'"><span class="st '+(m.stage?'soon':'live')+'">'+
+    (m.stage||'已接入')+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="'+
+    (ICON[m.key]||'')+'"/></svg><h4>'+esc(m.name)+'</h4><p>'+esc(m.desc)+'</p><div class="num">'+esc(m.num)+'</div></div>').join('');
+  const recent = D.recent.length ? D.recent.map(r =>
+    '<div class="row"><time>'+esc(r.d)+' '+esc(r.t)+'</time><span class="txt">'+esc(r.txt)+
+    '</span><span class="to">'+esc(r.to)+'</span></div>').join('') :
+    '<div class="empt">'+(D.recent_empty||'这里还没有记录')+'</div>';
+  const tips = D.tips.map(t => '<div class="tip"><i></i><span>'+esc(t)+'</span></div>').join('');
+  // 待办前 5 条：按优先级 + 积压天数（后端已排好）
+  // 两条 mini 列表由 mountMinis() 动态渲染（要支持点完成后补位）
+  return `
+    <div class="principles">
+      <div class="p-head"><h3>人生准则</h3>
+        <span class="tag">${D.principles.length} 条</span>
+        <span class="link" data-k="pr">怎么来的</span></div>
+      <div class="p-list">${plist}</div>
+      <div class="p-foot">每条下面一行是出处；05／06 是你 10/22 口述的完整解释，10/12 原文只写了「复利」「长寿」两个词</div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi" id="kpi-todo">
+        <div class="k-head"><span>待办未完成 · 高优先级</span><span class="st">已接入</span></div>
+        <div class="big"><b>${K.todo_open}</b><u>件未完成</u><em>其中 ${K.todo_high} 件高</em></div>
+        <div class="mini" id="mini-todo" data-pool="todo"></div>
+        <div class="sub">${K.oldest_days==null?'台账里还没有带创建日期的待办'
+          :'按优先级＋积压天数排，前 5 条直接摆卡上；最老一条压了 <b>'+K.oldest_days+' 天</b>（'+esc(K.oldest_item['创建日期'])+' 创建）'}</div>
+      </div>
+      <div class="kpi" id="kpi-wish">
+        <div class="k-head"><span>欲望清单在观察 · 未做功课</span><span class="st">已接入</span></div>
+        <div class="big"><b>${K.wish_total}</b><u>项在观察</u><em>${K.wish_nohw} 项没做功课</em></div>
+        <div class="mini" id="mini-wish" data-pool="wish"></div>
+        <div class="sub">${K.wish_nohw?'没做功课占 <b>'+K.wish_pct+'%</b>，接 G7 前先清「需求程度」列'+
+          (K.wish_dirty?'（'+K.wish_dirty+' 项格式脏）':''):'全部功课都做完了'}</div>
+      </div>
+      <div class="kpi na">
+        <div class="k-head"><span>本月支出 · 结余 · 冲动消费</span><span class="st">G5 未接入</span></div>
+        <div class="trio">
+          <div><span>本月支出</span><b>¥ --</b></div>
+          <div><span>结余</span><b>¥ --</b></div>
+          <div><span>冲动消费</span><b>-- 笔</b></div>
+        </div>
+        <div class="sub">账本现在 <b>${K.money_rows} 笔</b> · 等 G5 导支付宝/微信账单后自动算，冲动消费按账本「是否冲动」列统计</div>
+      </div>
+      <div class="kpi na">
+        <div class="k-head"><span>日均屏幕时间 · 前五大应用</span><span class="st">G8 未接入</span></div>
+        <div class="big"><b>-- <u>小时</u></b><em>日均 / 近 7 天</em></div>
+        <div>${top5}</div>
+        <div class="sub">时间记录现在 <b>${K.time_rows} 条</b>；应用名与时长故意不预填，G8 接系统屏幕时间后按真实排名填</div>
+      </div>
+    </div>
+
+    <div class="sec-head"><h3>模块入口</h3><span>灰=还没接通；亮=现在就能点</span></div>
+    <div class="grid8">${mods}</div>
+
+    <div class="twocol">
+      <div class="card"><h4>最近入账</h4>${recent}</div>
+      <div class="card"><h4>今天这 3 件事</h4>${tips}</div>
+    </div>`;
+}
+
+/* ============ 总清单 ============ */
+let allQ='', allSheet='', allLimit=60;
+function viewAll(){
+  const hit = D.all.filter(r =>
+    (!allSheet || r.s===allSheet) &&
+    (!allQ || (r.t+' '+r.s).toLowerCase().includes(allQ.toLowerCase())));
+  const show = hit.slice(0, allLimit);
+  const rows = show.length ? show.map(r =>
+    '<div class="trow"><span class="sh">'+esc(r.s)+'</span><span class="dt">'+esc(r.d||'—')+
+    '</span><span class="tx">'+esc(r.t)+'</span></div>').join('')
+    : '<div class="empty">没有匹配的记录</div>';
+  return `
+    <div class="pbar"><h2>总清单</h2>
+      <span class="pmeta">${T.sheets} 张表 · 合计 ${T.rows} 条，这里 ${D.all.length} 条（「0 说明」的 ${T.rows-D.all.length} 行是使用说明，不进清单）</span>
+      <span class="pstage">已接入</span></div>
+    <div class="toolbar">
+      <input id="q" placeholder="搜内容或表名，例如「体检」「念头」" value="${esc(allQ)}">
+      <select id="fs">
+        <option value="">全部表（${T.sheets}）</option>
+        ${D.sheets.map(s=>'<option value="'+esc(s.name)+'"'+(s.name===allSheet?' selected':'')+'>'+esc(s.name)+'（'+s.n+'）</option>').join('')}
+      </select>
+      <span class="cnt" id="cnt">命中 ${hit.length} 条</span>
+    </div>
+    <div class="tlist" id="tlist">${rows}</div>
+    ${hit.length>show.length?'<button class="more" id="more">再显示 ' + Math.min(120,hit.length-show.length) + ' 条（还有 ' + (hit.length-show.length) + ' 条）</button>':''}`;
+}
+
+/* ============ 待办 ============ */
+function viewTodo(){
+  if(!D.todos.length) return `<div class="pbar"><h2>待办</h2><span class="pstage">已接入</span></div>
+    <div class="empty">台账里没有未完成待办</div>`;
+  const rows = D.todos.map((t,i)=>`
+    <div class="tk${t.p==='高'?' hi':''}" data-todo="${i}">
+      <span class="box"></span>
+      <div class="body">
+        <div class="tt">${esc(t.t)}</div>
+        <div class="mt">
+          ${t.p==='高'?'<span class="pill red">高优先级</span>':''}
+          ${t.cat?'<span class="pill">'+esc(t.cat)+'</span>':''}
+          <span>创建 ${esc(t.d||'—')}</span>
+          ${t.age!=null?'<span>压了 <b>'+t.age+' 天</b></span>':''}
+        </div>
+        ${t.note?'<div class="nt">'+esc(t.note)+'</div>':''}
+      </div>
+    </div>`).join('');
+  return `
+    <div class="pbar"><h2>待办</h2>
+      <span class="pmeta">${K.todo_open} 件未完成 · ${K.todo_high} 件高优先级 · 按优先级＋积压天数排</span>
+      <span class="pstage">已接入</span></div>
+    <div class="ph" style="padding:12px 16px">
+      <ul style="padding-left:18px"><li>现在点勾<b>不会真的写回</b> xlsx —— 写回通道在 G3 做，届时点勾即完成、误触可拉回。</li>
+      <li>勾选逻辑已经在界面里跑通了，接上通道就能直接用。</li></ul>
+    </div>
+    <div class="tlist">${rows}</div>`;
+}
+
+/* ============ 欲望清单 ============ */
+function viewWish(){
+  const rows = D.wishes.map(w=>`
+    <tr>
+      <td class="nm">${esc(w.n)}<div style="font-size:10px;color:#A38585;margin-top:2px">${esc(w.d||'')}</div></td>
+      <td>${w.dirty?'<span class="dirty">'+(w.need?esc(w.need):'空')+'</span>':'<span class="pill">'+esc(w.need)+'</span>'}</td>
+      <td>${w.hw==='有'?'<span class="pill blue">已做</span>':'<span class="pill gold">没做</span>'}
+          ${w.hwt?'<div style="font-size:10px;color:#A38585;margin-top:3px">'+esc(w.hwt)+'</div>':''}</td>
+      <td>${esc(w.top||'—')}</td>
+      <td>${esc(w.way||'—')}</td>
+      <td>${esc(w.bought||'—')}</td>
+    </tr>`).join('');
+  return `
+    <div class="pbar"><h2>欲望清单</h2>
+      <span class="pmeta">${K.wish_total} 项 · ${K.wish_nohw} 项没做功课（${K.wish_pct}%） · 这里是冷静区，不是购物车</span>
+      <span class="pstage">已接入</span></div>
+    ${K.wish_dirty?`<div class="ph" style="padding:12px 16px">
+      <h3>有 ${K.wish_dirty} 行「需求程度」格式脏</h3>
+      <ul><li>5 项写成 <b>Y</b>、10 项<b>空着</b>，只有 8 项是「高 / 中」。<span style="color:#D8B48C">金色</span>就是脏的那几行。</li>
+      <li>接 G7 前我会给出清洗方案（Y→高？空→待定？），清完请你过目，绝不擅自改。</li></ul></div>`:''}
+    <div class="tlist" style="padding:12px 6px 8px">
+      <table class="wtbl">
+        <tr><th style="width:26%">商品</th><th style="width:9%">需求程度</th><th style="width:26%">功课</th>
+            <th style="width:13%">购买目的</th><th style="width:10%">方式</th><th style="width:10%">已购买</th></tr>
+        ${rows}
+      </table>
+    </div>`;
+}
+
+/* ============ 知识体系 ============ */
+let knowTab='novel';
+function viewKnow(){
+  const tabs = [['novel','小说 '+T.novels],['drama','剧 '+T.dramas],['anime','动漫 '+T.animes]];
+  let body='';
+  if(knowTab==='novel'){
+    body = D.novels.map(n=>`
+      <div class="novel"><div>
+        <div><span class="nm">${esc(n.n)}</span>${n.a?'<span class="au">'+esc(n.a)+'</span>':''}</div>
+        ${n.desc?'<div class="de">'+esc(n.desc)+'</div>':''}
+        <div class="tg">${n.tags.map(t=>'<span class="pill">'+esc(t)+'</span>').join('')}
+          ${n.nt>4?'<span class="pill">+'+ (n.nt-4) +'</span>':''}</div>
+      </div><div class="sc">${esc(n.sc||'—')}</div></div>`).join('');
+  } else if(knowTab==='drama'){
+    body = D.dramas.map(n=>`<div class="novel"><div>
+        <div><span class="nm">${esc(n.n)}</span>${n.a?'<span class="au">'+esc(n.a)+'</span>':''}</div>
+        ${n.desc?'<div class="de">'+esc(n.desc)+'</div>':''}</div><div></div></div>`).join('');
+  } else if(knowTab==='anime'){
+    body = D.animes.map(n=>`<div class="novel"><div>
+        <div><span class="nm">${esc(n.n)}</span>${n.a?'<span class="au">'+esc(n.a)+'</span>':''}</div>
+        </div><div></div></div>`).join('');
+  } else {
+    body = D.thoughts.map(t=>`<div class="novel"><div>
+        <div><span class="pill">${esc(t.t||'未分类')}</span></div>
+        <div class="de" style="font-size:11.5px;color:#D5CBCB;margin-top:5px">${esc(t.c)}</div>
+        </div><div></div></div>`).join('');
+  }
+  return `
+    <div class="pbar"><h2>知识体系</h2>
+      <span class="pmeta">收藏精华 ${T.know} 条（小说 ${T.novels} / 剧 ${T.dramas} / 动漫 ${T.animes}）＋ 念头 ${T.thoughts} 条</span>
+      <span class="pstage">已接入</span></div>
+    <div class="tabs">${tabs.map(([k,n])=>'<button data-tab="'+k+'" class="'+(knowTab===k?'on':'')+'">'+n+'</button>').join('')}</div>
+    <div class="tlist">${body||'<div class="empty">这一类还没有记录</div>'}</div>
+    <div class="ph" style="padding:12px 16px"><h3>还差一块：认知金字塔</h3>
+      <ul><li>认知金字塔要等你口述结构后画（G3），现在只有分类清单。</li>
+      <li>小说那 88 条带 20 多个维度标签（对受有执念 / 他逃他追 / 小黑屋…），标签按原表来，一条没加。</li></ul></div>`;
+}
+
+/* ============ 购物指南（G7 占位） ============ */
+function viewShop(){
+  const lg = [['#6B5B5B','灰','没做过功课，先放着别买'],['#3E9E5A','绿','可复购，闭眼买'],
+              ['#D8B48C','黄','需比价/需确认，买前再查'],['#F8F8F8','白','只买过一次，观察']];
+  return `
+    <div class="pbar"><h2>购物指南</h2><span class="pmeta">复购四态 · 这一页等 G7</span>
+      <span class="pstage">G7</span></div>
+    <div class="legend">${lg.map(([c,n,d])=>'<div class="lg"><b><span class="dot" style="background:'+c+'"></span>'+n+'</b><p>'+d+'</p></div>').join('')}</div>
+    <div class="ph"><h3>为什么现在还不能做</h3>
+      <ul>
+        <li>需要「<b>购买记录</b>」——同一件东西买过几次、间隔多久、上次买的型号。台账里目前只有欲望清单（${K.wish_total} 项在观察），没有历史复购数据。</li>
+        <li>依赖 <b>G7 购物数据接通</b>：先用欲望清单的 ${K.wish_total} 项跑通流程，之后接订单历史自动判四态。</li>
+        <li>前置脏数据：${K.wish_dirty} 行「需求程度」格式要清洗，否则分不出哪些该进绿名单。</li>
+      </ul></div>
+    <div class="ph"><h3>现在能看到的</h3>
+      <ul><li>欲望清单 ${K.wish_total} 项，其中 <b>${K.wish_nohw} 项没做功课</b>；这一页的数据源就是它。</li>
+      <li>点左侧「欲望清单」可看全部 ${K.wish_total} 项明细。</li></ul></div>`;
+}
+
+/* ============ 账本（G5 占位） ============ */
+function viewMoney(){
+  return `
+    <div class="pbar"><h2>账本</h2><span class="pmeta">现在 ${K.money_rows} 笔 · 等 G5</span>
+      <span class="pstage">G5</span></div>
+    <div class="kpis">
+      <div class="kpi na"><div class="k-head"><span>本月支出</span><span class="st">G5 未接入</span></div>
+        <div class="big"><b>¥ --</b></div><div class="sub">账本 0 笔，一个数都不敢填</div></div>
+      <div class="kpi na"><div class="k-head"><span>本月结余</span><span class="st">G5 未接入</span></div>
+        <div class="big"><b>¥ --</b></div><div class="sub">要等收入一起进来才算得出</div></div>
+    </div>
+    <div class="ph"><h3>G5 要接什么</h3>
+      <ul>
+        <li><b>数据入口</b>：支付宝 / 微信账单导出（CSV），按月导，去重后入库。</li>
+        <li><b>字段</b>：日期 / 商户 / 金额 / 支付方式 / 分类 / 是否冲动消费 / 备注。</li>
+        <li><b>冲动消费</b>：「是否冲动消费」这一列要能手动标，首页第三张卡的笔数就是它统计出来的。</li>
+        <li><b>月报</b>：分类占比、环比、大额单笔、订阅类续费提醒。</li>
+      </ul></div>`;
+}
+
+/* ============ 时间台账（G8 占位） ============ */
+function viewTime(){
+  const ph5 = [1,2,3,4,5].map(i=>'<div class="t5"><i>'+i+'</i><span class="ph"></span><span class="bar"><s style="width:0%"></s></span><span class="tm">--</span></div>').join('');
+  return `
+    <div class="pbar"><h2>时间台账</h2><span class="pmeta">现在 ${K.time_rows} 条 · 等 G8</span>
+      <span class="pstage">G8</span></div>
+    <div class="kpi na" style="max-width:520px">
+      <div class="k-head"><span>日均屏幕时间 · 前五大应用</span><span class="st">G8 未接入</span></div>
+      <div class="big"><b>-- <u>小时</u></b><em>日均 / 近 7 天</em></div>
+      <div>${ph5}</div>
+      <div class="sub">应用名与时长故意留空条，等系统屏幕时间真数据</div>
+    </div>
+    <div class="ph"><h3>G8 要接什么</h3>
+      <ul>
+        <li><b>屏幕时间</b>：安卓「数字健康」导出 / 小米手机使用时长，取近 7 天日均＋前五大应用。</li>
+        <li><b>睡眠</b>：华为手环睡眠导出，算 23:30 后入睡的次数（熬夜次数）。</li>
+        <li><b>时间分类</b>：24h 时间轴按类别归档（工作 / 学习 / 形体 / 娱乐 / 睡眠），后续接 CPA、瑜伽时长。</li>
+        <li>顺带服务「戒刷抖音」——抖音时长单独一栏。</li>
+      </ul></div>`;
+}
+
+/* ============ 功课与研究（G6/G9 占位，但有真数据） ============ */
+function viewResearch(){
+  const nohw = D.wishes.filter(w=>w.hw==='无');
+  const rows = nohw.length ? nohw.map(w=>`<div class="rrow">
+      <div><b>${esc(w.n)}</b>
+        <div class="rl">${w.top?'<span class="pill">'+esc(w.top)+'</span>':''}
+          ${w.way?'<span class="pill">'+esc(w.way)+'</span>':''}
+          ${w.need&&!w.dirty?'<span class="pill gold">需求 '+esc(w.need)+'</span>':''}</div></div>
+      <span class="dt">${esc(w.d||'—')}</span></div>`).join('')
+    : '<div class="empty">所有欲望都做过功课了</div>';
+  return `
+    <div class="pbar"><h2>功课与研究</h2>
+      <span class="pmeta">${nohw.length} 项欠功课 · 研究流程等 G6/G9</span>
+      <span class="pstage">G6/G9</span></div>
+    <div class="ph"><h3>欠功课清单（真数据，来自欲望清单）</h3>
+      <ul><li>下面这 ${nohw.length} 项一个字的功课都没有。买之前至少过一遍：需求是否成立 → 候选型号 → 关键参数 → 真实测评来源。</li></ul></div>
+    <div class="tlist">${rows}</div>
+    <div class="ph"><h3>G6 / G9 要做什么</h3>
+      <ul><li><b>G6</b>：功课模板（需求 / 候选 / 参数对比 / 结论），每项可挂附件与链接。</li>
+      <li><b>G9</b>：深挖成研究报告，输出可复用的结论，同类商品下次直接调。</li></ul></div>`;
+}
+
+const VIEWS = {home:viewHome, all:viewAll, todo:viewTodo, wish:viewWish,
+  know:viewKnow, shop:viewShop, money:viewMoney, time:viewTime, research:viewResearch};
+
+function render(){
+  const key = (location.hash.replace('#/','')||'home').split('?')[0];
+  const fn = VIEWS[key] || viewHome;
+  $('#page').innerHTML = fn();
+  document.querySelectorAll('.nav a').forEach(a=>{
+    a.classList.toggle('on', a.getAttribute('data-k')===key);
+  });
+  $('#page').scrollTop = 0;
+  if(key==='all') bindAll();
+  mountMinis();
+}
+
+/* 弹层：搜索框 + ESC 关闭 */
+(function(){
+  const pq = $('#pq');
+  if(pq) pq.oninput = () => renderTasks(pq.value.trim());
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeTaskPanel(); });
+})();
+
+function bindAll(){
+  const q = $('#q'), fs = $('#fs');
+  if(q) q.oninput = () => { allQ = q.value.trim(); allLimit = 60;
+    const hit = countAll();
+    $('#tlist').innerHTML = allRows(hit);
+    $('#cnt').textContent = '命中 ' + hit.length + ' 条';
+    const m=$('#more'); if(m) m.remove();
+    if(hit.length>allLimit) addMore(hit);
+  };
+  if(fs) fs.onchange = () => { allSheet = fs.value; allLimit = 60;
+    const hit = countAll();
+    $('#tlist').innerHTML = allRows(hit);
+    $('#cnt').textContent = '命中 ' + hit.length + ' 条';
+    const m=$('#more'); if(m) m.remove();
+    if(hit.length>allLimit) addMore(hit);
+  };
+  const hit = countAll();
+  if(hit.length>allLimit) addMore(hit);
+}
+function countAll(){
+  const q = allQ.toLowerCase();
+  return D.all.filter(r => (!allSheet || r.s===allSheet) &&
+    (!q || (r.t+' '+r.s).toLowerCase().includes(q)));
+}
+function allRows(hit){
+  const show = hit.slice(0, allLimit);
+  return show.length ? show.map(r =>
+    '<div class="trow"><span class="sh">'+esc(r.s)+'</span><span class="dt">'+esc(r.d||'—')+
+    '</span><span class="tx">'+esc(r.t)+'</span></div>').join('')
+    : '<div class="empty">没有匹配的记录</div>';
+}
+function addMore(hit){
+  const b = document.createElement('button');
+  b.className='more'; b.id='more';
+  b.textContent = '再显示 ' + Math.min(120,hit.length-allLimit) + ' 条（还有 ' + (hit.length-allLimit) + ' 条）';
+  b.onclick = () => { allLimit += 120;
+    $('#tlist').innerHTML = allRows(hit);
+    b.remove(); if(hit.length>allLimit) addMore(hit); };
+  $('#page').appendChild(b);
+}
+
+/* ================= 卡片五条：标记完成 / 关联 WorkBuddy 任务 ================= */
+const SHOW_N = 5;
+const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><path d="m5 13 5 5 9-11"/></svg>';
+const ICON_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M10.5 13.5a4.5 4.5 0 0 0 6.4 0l2.6-2.6a4.5 4.5 0 0 0-6.4-6.4L11.9 5.7"/><path d="M13.5 10.5a4.5 4.5 0 0 0-6.4 0l-2.6 2.6a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>';
+
+const WISH_SORTED = [...D.wishes].sort((a,b)=>(a.hw==='无'?0:1)-(b.hw==='无'?0:1));
+const MINI = {
+  todo: {
+    sheet:'1 待办', linkCol:'关联链接', vcol:'事项',
+    pool: D.todos.map(t=>({
+      row:t.row, name:t.t, vt:t.vt, link:t.link, raw:t.st,
+      tag:(t.age!=null? t.age+' 天' : (t.p==='高'?'高':'—')),
+      cls:(t.p==='高'?'red':'')})),
+    done: d=>({'状态':'已完成','完成日期':d,'最后更新':d}),
+    undo: x=>({'状态':x.raw||'未完成','完成日期':null,'最后更新':D.today}),
+    label:'待办'
+  },
+  wish: {
+    sheet:'5 购物清单', linkCol:'关联任务', vcol:'商品名称',
+    pool: WISH_SORTED.map(w=>({
+      row:w.row, name:w.n, vt:w.vn, link:w.link, raw:(w.br||'否'),
+      tag:(w.hw==='无'?'未功课':'已功课'),
+      cls:(w.hw==='无'?'gold':'')})),
+    done: d=>({'已购买':'已购买 '+d}),
+    undo: x=>({'已购买':x.raw||'否'}),
+    label:'欲望'
+  }
+};
+const hiddenRows = {todo:new Set(), wish:new Set()};
+
+function miniRows(kind){
+  return MINI[kind].pool.filter(x=>x.row && !hiddenRows[kind].has(x.row)).slice(0, SHOW_N);
+}
+function mountMinis(){
+  ['todo','wish'].forEach(kind=>{
+    const box = document.getElementById('mini-'+kind);
+    if(!box) return;
+    const rows = miniRows(kind);
+    box.innerHTML = rows.length ? rows.map((x,i)=>
+      '<div class="mrow" data-kind="'+kind+'" data-row="'+x.row+'">'
+      + '<i>'+(i+1)+'</i>'
+      + '<span class="nm" title="'+esc(x.link ? x.name+'  →  '+x.link : x.name)+'">'+esc(x.name)+'</span>'
+      + (PUBLIC ? '' : '<span class="mops">'
+      +   '<button class="lnk'+(x.link?' on':'')+'" data-act="link" title="'
+      +     (x.link ? '已关联：'+esc(x.link) : '关联一个 WorkBuddy 任务')+'">'+ICON_LINK+'</button>'
+      +   '<button class="ok" data-act="done" title="标记完成（会写回台账）">'+ICON_OK+'</button>'
+      + '</span>')
+      + '<em class="'+x.cls+'">'+esc(x.tag)+'</em>'
+      + '</div>').join('')
+      : '<div class="mrow" style="grid-template-columns:1fr;color:var(--gray-dim)">这个池子已经空了</div>';
+  });
+}
+
+/* ---------- 本地服务探测 + 写回 ---------- */
+let API_BASE;              // undefined=没探过, ''=同源, 'http://ip:port'=跨源, false=不可用
+const QKEY = 'taizhang_pending_v1';
+function qAll(){ try{return JSON.parse(localStorage.getItem(QKEY)||'[]');}catch(e){return [];} }
+function qSave(q){ try{ localStorage.setItem(QKEY, JSON.stringify(q)); }catch(e){} }
+
+async function detectApi(force){
+  if(!force && API_BASE!==undefined) return API_BASE;
+  const prot = location.protocol;
+  if(prot==='http:'||prot==='https:'){
+    // 同源也要先探一次：云端静态托管（外网版）同样跑在 https 下，但没有 /api
+    try{
+      const c = new AbortController(); const t = setTimeout(()=>c.abort(), 1200);
+      const r = await fetch('/api/ping', {signal:c.signal}); clearTimeout(t);
+      if(r.ok){
+        let j=null; try{ j = await r.json(); }catch(e){}
+        if(j && j.ok && j.port){ API_BASE=''; flushQueue(); return ''; }
+      }
+    }catch(e){}
+  }
+  for(const b of ['http://127.0.0.1:8777','http://localhost:8777']){
+    try{
+      const c = new AbortController(); const t = setTimeout(()=>c.abort(), 900);
+      const r = await fetch(b+'/api/ping', {signal:c.signal}); clearTimeout(t);
+      if(r.ok){ API_BASE=b; flushQueue(); return b; }
+    }catch(e){}
+  }
+  API_BASE = false; return false;
+}
+async function api(path, body){
+  const base = await detectApi();
+  if(base===false) return {ok:false, offline:true, error:'没连上本地服务（8777）'};
+  try{
+    const r = await fetch(base+path, body ? {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)} : {});
+    return await r.json();
+  }catch(e){ return {ok:false, offline:true, error:String(e.message||e)}; }
+}
+async function flushQueue(){
+  const q = qAll(); if(!q.length) return;
+  const rest = [];
+  for(const j of q){
+    const r = await api('/api/update', j);
+    if(!r.ok) rest.push(j);
+  }
+  qSave(rest);
+  if(!rest.length) toast('之前暂存的 '+q.length+' 处改动已补写进台账');
+}
+
+/* ---------- 标记完成 ---------- */
+let undoTimer = null;
+async function markDone(kind, row){
+  const cfg = MINI[kind];
+  const item = cfg.pool.find(x=>x.row===row);
+  const el = document.querySelector('.mrow[data-kind="'+kind+'"][data-row="'+row+'"]');
+  if(!item || !el || el.classList.contains('busy')) return;
+  el.classList.add('done','busy');
+  const job = {sheet:cfg.sheet, row:row, verify:{[cfg.vcol]:item.vt}, changes:cfg.done(D.today)};
+  const r = await api('/api/update', job);
+  if(r.offline){
+    qSave([...qAll(), job]);
+    toast('没连上本地服务，这条先存在本机；双击「启动台账手机版.bat」后自动补写');
+  } else if(!r.ok){
+    el.classList.remove('done','busy');
+    toast('没写进去：'+r.error);
+    return;
+  }
+  const h = el.getBoundingClientRect().height;
+  el.style.height = h+'px'; el.style.overflow='hidden';
+  requestAnimationFrame(()=>{
+    el.style.height='0px'; el.style.paddingTop='0'; el.style.paddingBottom='0'; el.style.opacity='0';
+  });
+  setTimeout(()=>{
+    hiddenRows[kind].add(row); mountMinis(); bumpKpi(kind,-1);
+  }, 300);
+  showUndo(kind, item);
+}
+function bumpKpi(kind, delta){
+  const card = document.getElementById('kpi-'+kind); if(!card) return;
+  const b = card.querySelector('.big b'); if(!b) return;
+  const n = parseInt(b.textContent, 10);
+  if(!isNaN(n)) b.textContent = String(Math.max(0, n+delta));
+}
+function showUndo(kind, item){
+  const bar = $('#undo'); if(!bar) return;
+  bar.querySelector('span').textContent = '已标记完成：' + item.name.slice(0,16);
+  bar.classList.add('on');
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(()=>bar.classList.remove('on'), 9000);
+  bar.querySelector('button').onclick = async ()=>{
+    bar.classList.remove('on');
+    const cfg = MINI[kind];
+    const back = {sheet:cfg.sheet, row:item.row, verify:{[cfg.vcol]:item.vt}, changes:cfg.undo(item)};
+    const r = await api('/api/update', back);
+    if(r.offline) qSave([...qAll(), back]);
+    if(r.ok || r.offline){
+      hiddenRows[kind].delete(item.row); mountMinis(); bumpKpi(kind,1);
+      toast('已撤销，这条回到卡上');
+    } else { toast('撤销没成功：'+r.error); }
+  };
+}
+
+/* ---------- 关联 WorkBuddy 任务 ---------- */
+let TASKS = null, taskCtx = null, curPath = '';
+function openTaskPanel(kind, row){
+  const item = MINI[kind].pool.find(x=>x.row===row); if(!item) return;
+  taskCtx = {kind, row};
+  curPath = '';
+  $('#panelTitle').textContent = '给「'+item.name.slice(0,14)+'」关联一个 WorkBuddy 任务';
+  $('#pcount').textContent = '';
+  $('#pq').value = '';
+  $('#mask').classList.add('on'); $('#panel').classList.add('on');
+  if(TASKS){ renderTasks(''); }
+  else{
+    $('#plist').innerHTML = '<div class="wbempty">正在扫本机的 WorkBuddy 会话记录…</div>';
+    loadTasks();
+  }
+  setTimeout(()=>{ try{$('#pq').focus();}catch(e){} }, 120);
+}
+function closeTaskPanel(){
+  $('#mask').classList.remove('on'); $('#panel').classList.remove('on'); taskCtx=null;
+}
+async function loadTasks(){
+  const r = await api('/api/tasks');
+  if(!r || r.error || !r.tasks){
+    $('#plist').innerHTML = '<div class="wbempty">扫不到任务列表：'+esc((r&&r.error)||'未知原因')
+      + '<br><br>页面如果是直接双击打开的，要先双击「启动台账手机版.bat」；<br>或者从 http://127.0.0.1:8777 打开这一页。</div>';
+    return;
+  }
+  TASKS = r.tasks; renderTasks('');
+}
+function renderTasks(q){
+  const box = $('#plist'); if(!box || !TASKS) return;
+  const k = (q||'').toLowerCase();
+  const list = TASKS.filter(t=>!k || (t.title+' '+t.project+' '+t.path).toLowerCase().includes(k));
+  $('#pcount').textContent = list.length+' / '+TASKS.length+' 个';
+  box.innerHTML = list.length ? list.slice(0,300).map(t=>
+    '<div class="wbitem" data-path="'+esc(t.path)+'">'
+    + '<span class="t">'+esc(t.title)+'</span>'
+    + '<div class="m"><b>'+esc(t.project)+'</b><span>'+esc(t.date)+'</span></div>'
+    + '<div class="p">'+esc(t.path)+'</div></div>').join('')
+    : '<div class="wbempty">没有匹配的任务</div>';
+}
+async function pickTask(path){
+  if(!taskCtx) return;
+  const t = TASKS.find(x=>x.path===path); if(!t) return;
+  const cfg = MINI[taskCtx.kind];
+  const item = cfg.pool.find(x=>x.row===taskCtx.row);
+  const val = 'WorkBuddy · '+t.title+' | '+t.date+' | '+t.path;
+  const job = {sheet:cfg.sheet, row:taskCtx.row, verify:{[cfg.vcol]:item.vt}, changes:{[cfg.linkCol]:val}};
+  curPath = t.path;
+  const r = await api('/api/update', job);
+  if(r.offline){
+    qSave([...qAll(), job]);
+    toast('没连上本地服务，关联先存在本机，服务起来后自动补写');
+  } else if(!r.ok){
+    toast('关联没写进去：'+r.error); return;
+  }
+  item.link = val;
+  mountMinis(); closeTaskPanel();
+  toast('已关联，台账「'+cfg.linkCol+'」列里存了路径');
+}
+async function clearLink(){
+  if(!taskCtx) return;
+  const cfg = MINI[taskCtx.kind];
+  const item = cfg.pool.find(x=>x.row===taskCtx.row);
+  const job = {sheet:cfg.sheet, row:taskCtx.row, verify:{[cfg.vcol]:item.vt}, changes:{[cfg.linkCol]:''}};
+  const r = await api('/api/update', job);
+  if(r.offline) qSave([...qAll(), job]);
+  else if(!r.ok){ toast('没清掉：'+r.error); return; }
+  item.link = ''; mountMinis(); closeTaskPanel(); toast('已取消关联');
+}
+function copyPath(){
+  if(!curPath){ toast('先点一条任务，路径才会显示在这里'); return; }
+  try{ navigator.clipboard.writeText(curPath); toast('路径已复制'); }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = curPath; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('路径已复制'); }catch(e2){ toast(curPath); }
+    ta.remove();
+  }
+}
+
+document.addEventListener('click', e=>{
+  const act = e.target.closest('.mops button');
+  if(act){
+    const box = act.closest('.mrow');
+    const kind = box.getAttribute('data-kind');
+    const row = parseInt(box.getAttribute('data-row'), 10);
+    if(act.getAttribute('data-act')==='done'){ markDone(kind, row); }
+    else { openTaskPanel(kind, row); }
+    return;
+  }
+  if(e.target.closest('#mask') || e.target.closest('#panelClose')){ closeTaskPanel(); return; }
+  const ti = e.target.closest('.wbitem');
+  if(ti){ pickTask(ti.getAttribute('data-path')); return; }
+  if(e.target.closest('#pclear')){ clearLink(); return; }
+  if(e.target.closest('#pcopy')){ copyPath(); return; }
+  const nav = e.target.closest('.nav a');
+  if(nav){ location.hash = '#/' + nav.getAttribute('data-k'); return; }
+  const ent = e.target.closest('[data-k]');
+  if(ent){
+    const k = ent.getAttribute('data-k');
+    if(k==='pr'){toast('准则提炼标准：原文 / 有取舍方向 / 跨场景 / 有行为印证 / 不是病 → 见 v3.1 定版第五节');return;}
+    if(VIEWS[k]){ location.hash = '#/' + k; return; }
+  }
+  const tab = e.target.closest('[data-tab]');
+  if(tab){ knowTab = tab.getAttribute('data-tab'); render(); return; }
+  const td = e.target.closest('[data-todo]');
+  if(td){
+    const b = td.querySelector('.box');
+    const on = b.style.background === 'rgba(184, 0, 0, 0.35)' || b.dataset.on==='1';
+    if(on){ b.dataset.on='0'; b.style.background=''; b.style.borderColor='';
+      b.innerHTML=''; }
+    else { b.dataset.on='1'; b.style.background='rgba(184,0,0,.35)'; b.style.borderColor='#E03A3A';
+      b.innerHTML='<svg viewBox="0 0 24 24" style="width:11px;height:11px;display:block;margin:1px" fill="none" stroke="#fff" stroke-width="3.4"><path d="m5 13 5 5 9-11"/></svg>'; }
+    toast('界面里勾上了。真写回 xlsx 要等 G3 通道 —— 现在关掉页面就复原，不会动台账');
+  }
+});
+
+window.addEventListener('hashchange', render);
+render();
+</script></body></html>
