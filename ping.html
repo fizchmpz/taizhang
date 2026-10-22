@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>台账连通测试</title>
+<style>body{font:16px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#2E0000;color:#fff;padding:26px;margin:0}
+h1{font-size:22px;color:#4ade80;margin:0 0 8px}
+.box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:13px 15px;margin:13px 0;font-size:13px;word-break:break-all}
+.k{color:#f0a0a0;font-size:12px}.big{font-size:15px;color:#fff;display:block;margin-top:3px}
+</style></head><body>
+<h1>能打开</h1>
+<div class="box">这一页没有外部资源、没有大脚本，就一张纸。<br>你能看到这段字，说明<b>域名 / 网络 / 证书都没问题</b>，问题出在台账那一页本身。</div>
+<div class="box"><span class="k">生成时间</span><span class="big">2026/10/23 01:14:54</span></div>
+<div class="box"><span class="k">你的浏览器</span><span id="ua" class="big">（脚本没跑 —— 说明浏览器把 JS 挡了）</span></div>
+<div class="box"><span class="k">现在时间</span><span id="now" class="big">—</span></div>
+<script>document.getElementById('ua').innerHTML=String(navigator.userAgent).replace(/</g,'&lt;');
+document.getElementById('now').innerHTML=String(new Date());</script>
+<p style="font-size:12px;opacity:.6">把这一屏截给我就行。</p>
+</body></html>
